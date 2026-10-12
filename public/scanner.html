@@ -23,22 +23,25 @@
         }
 
         #scanner-container {
-            position: absolute;
+            position: fixed;
             inset: 0;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
             background: #000;
             overflow: hidden;
+            z-index: 1;
         }
         #reader {
             width: 100% !important;
             height: 100% !important;
+            min-height: 100vh !important;
             object-fit: cover !important;
         }
         #reader video {
             width: 100% !important;
             height: 100% !important;
             object-fit: cover !important;
+            display: block !important;
         }
 
         /* --- TOP NAV BAR --- */
@@ -227,7 +230,7 @@
             border-radius: 26px;
             box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.52);
             position: relative;
-            margin-top: 15px; /* Offset sedikit ke bawah untuk memberi ruang mode bar */
+            margin-top: 15px;
         }
         .frame::after {
             content: "ARAHKAN QR KARTU KE SINI";
@@ -469,6 +472,24 @@
         <div id="flash-status">Mohon Tunggu</div>
     </div>
 
+    <!-- UI PESAN ERROR KAMERA -->
+    <div id="camera-error-container" style="display: none; position: fixed; inset: 0; z-index: 100; background: rgba(15, 23, 42, 0.92); flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 24px;">
+        <div style="background: white; border-radius: 24px; padding: 32px 24px; max-width: 380px; width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+            <div style="width: 70px; height: 70px; border-radius: 50%; background: #FEE2E2; color: #EF4444; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 16px;">
+                <i class="fa-solid fa-camera-slash"></i>
+            </div>
+            <h3 style="font-size: 19px; color: #0f172a; margin-bottom: 8px; font-weight: 700;">Kamera Tidak Terbuka</h3>
+            <p id="camera-error-text" style="font-size: 13.5px; color: #64748b; line-height: 1.5; margin-bottom: 20px;">
+                Pastikan izin kamera sudah diizinkan di browser Anda (klik ikon gembok di sebelah alamat web).
+            </p>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="startScanner()" style="flex: 1; padding: 13px; background: #4F46E5; color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px;">
+                    <i class="fa-solid fa-rotate-right"></i> Coba Buka Lagi
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL ABSEN MANUAL -->
     <div id="modal-manual">
         <div class="manual-box">
@@ -554,21 +575,52 @@
             }
         }
 
-        async function startScanner() {
-            if (!html5QrCode) {
-                html5QrCode = new Html5Qrcode('reader');
+        function showCameraError(msg) {
+            const errBox = document.getElementById('camera-error-container');
+            const errTxt = document.getElementById('camera-error-text');
+            if (errBox) {
+                if (errTxt && msg) errTxt.textContent = msg;
+                errBox.style.display = 'flex';
+            }
+        }
+
+        function hideCameraError() {
+            const errBox = document.getElementById('camera-error-container');
+            if (errBox) errBox.style.display = 'none';
+        }
+
+        async function startScanner(targetFacingMode) {
+            if (targetFacingMode) {
+                currentFacingMode = targetFacingMode;
             }
 
-            updateCameraUi();
+            // Hentikan dan bersihkan instance lama jika ada
+            if (html5QrCode) {
+                try {
+                    if (html5QrCode.isScanning) {
+                        await html5QrCode.stop();
+                    }
+                } catch (e) {
+                    console.warn('Error saat menghentikan scanner lama:', e);
+                }
+                try {
+                    html5QrCode.clear();
+                } catch (e) {}
+                html5QrCode = null;
+            }
 
+            // Bersihkan container di DOM
+            const readerEl = document.getElementById('reader');
+            if (readerEl) readerEl.innerHTML = '';
+
+            updateCameraUi();
+            hideCameraError();
+
+            html5QrCode = new Html5Qrcode('reader');
+
+            // Konfigurasi scan (JANGAN tambahkan aspectRatio agar tidak memicu OverconstrainedError pada kamera HP)
             const config = {
-                fps: 15,
-                qrbox: function(viewfinderWidth, viewfinderHeight) {
-                    const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                    const size = Math.min(Math.floor(minEdge * 0.72), 330);
-                    return { width: size, height: size };
-                },
-                aspectRatio: 1.0
+                fps: 15
             };
 
             const onScanSuccess = async (decodedText) => {
@@ -607,37 +659,79 @@
                 }
             };
 
+            const onScanFailure = () => {
+                // Abaikan frame yang belum terdeteksi QR
+            };
+
+            // 1. Coba mulai dengan facingMode yang dipilih
             try {
                 await html5QrCode.start(
                     { facingMode: currentFacingMode },
                     config,
-                    onScanSuccess
+                    onScanSuccess,
+                    onScanFailure
                 );
-            } catch (err) {
-                console.warn(`Mode kamera ${currentFacingMode} gagal, mencoba mode alternatif:`, err);
-                const altMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-                try {
-                    currentFacingMode = altMode;
-                    localStorage.setItem('absensi_camera_mode', currentFacingMode);
-                    updateCameraUi();
-                    await html5QrCode.start(
-                        { facingMode: altMode },
-                        config,
-                        onScanSuccess
-                    );
-                } catch (err2) {
-                    try {
-                        const devices = await Html5Qrcode.getCameras();
-                        if (devices && devices.length > 0) {
-                            await html5QrCode.start(devices[0].id, config, onScanSuccess);
-                        } else {
-                            throw err2;
-                        }
-                    } catch (err3) {
-                        alert('Tidak dapat mengakses kamera: ' + (err3.message || 'Izin kamera ditolak.'));
-                    }
-                }
+                localStorage.setItem('absensi_camera_mode', currentFacingMode);
+                updateCameraUi();
+                return;
+            } catch (err1) {
+                console.warn(`Gagal memulai kamera '${currentFacingMode}', mencoba mode alternatif...`, err1);
             }
+
+            // 2. Jika gagal, coba mode sebaliknya (misal device tidak punya kamera belakang / hanya ada depan)
+            const altFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+            try {
+                if (html5QrCode) {
+                    try { html5QrCode.clear(); } catch (_) {}
+                }
+                html5QrCode = new Html5Qrcode('reader');
+
+                await html5QrCode.start(
+                    { facingMode: altFacingMode },
+                    config,
+                    onScanSuccess,
+                    onScanFailure
+                );
+                currentFacingMode = altFacingMode;
+                localStorage.setItem('absensi_camera_mode', currentFacingMode);
+                updateCameraUi();
+                return;
+            } catch (err2) {
+                console.warn(`Gagal dengan mode alternatif '${altFacingMode}', mencoba device list...`, err2);
+            }
+
+            // 3. Fallback: coba kamera pertama dari daftar perangkat
+            try {
+                const cameras = await Html5Qrcode.getCameras();
+                if (cameras && cameras.length > 0) {
+                    let targetCam = cameras[0];
+                    if (currentFacingMode === 'environment') {
+                        const backCam = cameras.find(c => {
+                            const lbl = (c.label || '').toLowerCase();
+                            return lbl.includes('back') || lbl.includes('rear') || lbl.includes('belakang') || lbl.includes('environment');
+                        });
+                        if (backCam) targetCam = backCam;
+                    }
+
+                    if (html5QrCode) {
+                        try { html5QrCode.clear(); } catch (_) {}
+                    }
+                    html5QrCode = new Html5Qrcode('reader');
+
+                    await html5QrCode.start(
+                        targetCam.id,
+                        config,
+                        onScanSuccess,
+                        onScanFailure
+                    );
+                    updateCameraUi();
+                    return;
+                }
+            } catch (err3) {
+                console.warn('Gagal dengan getCameras fallback:', err3);
+            }
+
+            showCameraError('Tidak dapat membuka kamera. Pastikan izin kamera sudah diberikan di browser Anda.');
         }
 
         async function switchCamera() {
@@ -646,7 +740,7 @@
 
             const btnSwitch = document.getElementById('btn-switch-camera');
             if (btnSwitch) {
-                btnSwitch.style.opacity = '0.6';
+                btnSwitch.style.opacity = '0.5';
                 btnSwitch.style.pointerEvents = 'none';
             }
 
@@ -656,10 +750,7 @@
             updateCameraUi();
 
             try {
-                if (html5QrCode && html5QrCode.isScanning) {
-                    await html5QrCode.stop();
-                }
-                await startScanner();
+                await startScanner(nextFacingMode);
             } catch (e) {
                 console.error('Error saat switch kamera:', e);
             } finally {
