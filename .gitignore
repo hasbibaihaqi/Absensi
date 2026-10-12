@@ -6,3 +6,9 @@ database/fotos/
 database/backups/
 *.log
 npm-debug.log*
+
+# SQLite database files — jangan ikut deploy ke server produksi
+# Server akan membuat database segar secara otomatis saat pertama start
+database/*.sqlite
+database/*.sqlite-shm
+database/*.sqlite-wal
