@@ -1383,14 +1383,23 @@ function updateSidebarLogo(logoUrl) {
     const brand = document.querySelector('.brand');
     if (!brand) return;
     let existingLogo = brand.querySelector('.brand-logo');
+    const iconBox = brand.querySelector('.brand-icon-box');
     const iconEl = brand.querySelector('i');
     if (logoUrl) {
-        if (!existingLogo) { existingLogo = document.createElement('img'); existingLogo.className = 'brand-logo'; brand.insertBefore(existingLogo, brand.firstChild); }
+        if (!existingLogo) {
+            existingLogo = document.createElement('img');
+            existingLogo.className = 'brand-logo';
+            brand.insertBefore(existingLogo, brand.firstChild);
+        }
         existingLogo.src = logoUrl;
-        if (iconEl) iconEl.style.display = 'none';
+        // Sembunyikan icon gradien ungu saat logo ada
+        if (iconBox) iconBox.style.display = 'none';
+        else if (iconEl) iconEl.style.display = 'none';
     } else {
         if (existingLogo) existingLogo.remove();
-        if (iconEl) iconEl.style.display = '';
+        // Tampilkan kembali icon gradien ungu saat logo dihapus
+        if (iconBox) iconBox.style.display = '';
+        else if (iconEl) iconEl.style.display = '';
     }
 }
 

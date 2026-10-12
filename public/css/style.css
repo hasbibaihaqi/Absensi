@@ -107,6 +107,16 @@ body {
     flex-shrink: 0;
 }
 
+/* Logo sekolah yang di-inject oleh JS — tampilkan di sidebar header dengan ukuran tetap */
+.brand-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    object-fit: contain;
+    flex-shrink: 0;
+    background: transparent;
+}
+
 .brand-text {
     font-size: 15px;
     font-weight: 800;
