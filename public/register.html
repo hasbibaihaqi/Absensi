@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pendaftaran Guru - AbsenSekolah</title>
+    <meta name="description" content="Pendaftaran akun guru baru untuk sistem absensi sekolah digital.">
+    <!-- Early theme check to prevent flash of wrong theme (FOUC) -->
+    <script>
+        (function() {
+            try {
+                var t = localStorage.getItem('app-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', t);
+            } catch(e){}
+        })();
+    </script>
+    <link rel="stylesheet" href="./css/shared.css">
+    <link rel="stylesheet" href="./css/animations.css">
+    <!-- Font Awesome 6.5.2 — self-hosted (berjalan offline) -->
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 30px 16px;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(124, 58, 237, 0.08) 100%), var(--bg-page);
+        }
+
+        .auth-wrapper {
+            width: 100%;
+            max-width: 440px;
+            margin: auto;
+        }
+
+        .auth-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            padding: 36px 30px;
+            position: relative;
+            backdrop-filter: blur(8px);
+        }
+
+        .auth-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .auth-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.15s;
+        }
+        .auth-back-link:hover {
+            color: var(--primary);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .auth-logo {
+            width: 52px;
+            height: 52px;
+            background: var(--primary-light);
+            border-radius: var(--radius-lg);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--primary);
+            margin-bottom: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+        .auth-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .auth-header h1 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1.2;
+            margin-bottom: 4px;
+        }
+
+        .auth-header p {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+        }
+
+        .alert-auth {
+            display: none;
+            padding: 12px 14px;
+            border-radius: var(--radius-md);
+            font-size: 0.8125rem;
+            margin-bottom: 20px;
+            align-items: center;
+            gap: 8px;
+            text-align: left;
+        }
+        .alert-error {
+            background-color: var(--danger-light);
+            color: var(--danger-text);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        .alert-success {
+            background-color: var(--success-light);
+            color: var(--success-text);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        /* Password Strength Meter */
+        .password-strength-wrap {
+            margin-top: 6px;
+        }
+        .strength-bar-bg {
+            height: 4px;
+            background-color: var(--bg-subtle);
+            border-radius: var(--radius-pill);
+            overflow: hidden;
+        }
+        .strength-bar-fill {
+            height: 100%;
+            width: 0;
+            border-radius: var(--radius-pill);
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+        .strength-label {
+            font-size: 0.725rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .auth-footer {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-subtle);
+            text-align: center;
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+        }
+
+        .auth-footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-top-bar">
+            <a href="/login" class="auth-back-link" title="Kembali ke halaman login">
+                <i class="fa-solid fa-arrow-left"></i> Halaman Login
+            </a>
+            <button type="button" class="theme-toggle-btn theme-toggle-light" onclick="toggleTheme()" aria-label="Ganti mode gelap/terang">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+        </div>
+
+        <div class="auth-header">
+            <div class="auth-logo" id="auth-logo-box">
+                <i class="fa-solid fa-user-graduate"></i>
+            </div>
+            <h1 id="nama-sekolah-reg">Pendaftaran Akun Guru</h1>
+            <p>Daftarkan akun untuk mencatat dan memantau absensi</p>
+        </div>
+
+        <div id="alertBox" class="alert-auth" role="alert"></div>
+
+        <form id="formRegister" onsubmit="event.preventDefault(); prosesRegister();" novalidate>
+            <!-- Dropdown Pilihan Profil Guru Terdaftar -->
+            <div class="form-group">
+                <label for="guru_select" class="form-label">Tautkan ke Data Guru (Opsional)</label>
+                <div class="input-wrapper has-icon-left">
+                    <i class="fa-solid fa-id-card input-icon-left"></i>
+                    <select id="guru_select" class="form-select" onchange="onGuruSelected()">
+                        <option value="">-- Pilih Nama Guru Terdaftar --</option>
+                    </select>
+                </div>
+                <div class="form-helper">Jika profil sudah ada, nama lengkap akan terisi otomatis.</div>
+            </div>
+
+            <!-- Nama Lengkap -->
+            <div class="form-group">
+                <label for="nama_lengkap" class="form-label">Nama Lengkap Guru <span class="required">*</span></label>
+                <div class="input-wrapper has-icon-left">
+                    <i class="fa-solid fa-user input-icon-left"></i>
+                    <input type="text" id="nama_lengkap" class="form-input" placeholder="Nama lengkap beserta gelar" required autocomplete="name">
+                </div>
+            </div>
+
+            <!-- Username -->
+            <div class="form-group">
+                <label for="username" class="form-label">Username Login <span class="required">*</span></label>
+                <div class="input-wrapper has-icon-left">
+                    <i class="fa-solid fa-at input-icon-left"></i>
+                    <input type="text" id="username" class="form-input" placeholder="Contoh: guru_budi" required autocomplete="username">
+                </div>
+            </div>
+
+            <!-- Password & Strength Meter -->
+            <div class="form-group">
+                <label for="password" class="form-label">Password <span class="required">*</span></label>
+                <div class="input-wrapper has-icon-left has-btn-right">
+                    <i class="fa-solid fa-lock input-icon-left"></i>
+                    <input type="password" id="password" class="form-input" placeholder="Minimal 6 karakter" required autocomplete="new-password" oninput="cekKekuatanPassword(this.value)">
+                    <button type="button" class="input-btn-right" onclick="togglePasswordVisibility('password', this)" aria-label="Tampilkan atau sembunyikan password">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+                <div class="password-strength-wrap">
+                    <div class="strength-bar-bg">
+                        <div id="strength-bar" class="strength-bar-fill"></div>
+                    </div>
+                    <div class="strength-label">
+                        <span id="strength-text">Kekuatan: Belum diisi</span>
+                        <span>Min. 6 karakter</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Konfirmasi Password -->
+            <div class="form-group">
+                <label for="konfirmasi_password" class="form-label">Konfirmasi Password <span class="required">*</span></label>
+                <div class="input-wrapper has-icon-left has-btn-right">
+                    <i class="fa-solid fa-shield-halved input-icon-left"></i>
+                    <input type="password" id="konfirmasi_password" class="form-input" placeholder="Ulangi password di atas" required autocomplete="new-password">
+                    <button type="button" class="input-btn-right" onclick="togglePasswordVisibility('konfirmasi_password', this)" aria-label="Tampilkan atau sembunyikan password">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" id="btnRegister" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+                <i class="fa-solid fa-paper-plane"></i> <span>Daftarkan Akun Guru</span>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p style="margin-bottom: 8px;">
+                Sudah memiliki akun? <a href="/login"><i class="fa-solid fa-right-to-bracket"></i> Masuk di sini</a>
+            </p>
+            <p>
+                <a href="/"><i class="fa-solid fa-house"></i> Halaman Publik Absensi</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script src="./js/theme.js"></script>
+<script>
+    let daftarGuruList = [];
+
+    // 1. Muat Nama & Logo Sekolah dinamis dari endpoint FASE 1
+    fetch('/api/public/info-sekolah')
+        .then(r => r.json())
+        .then(d => {
+            if (d.namaSekolah) {
+                document.getElementById('nama-sekolah-reg').textContent = `Pendaftaran - ${d.namaSekolah}`;
+                document.title = `Registrasi Guru - ${d.namaSekolah}`;
+            }
+        })
+        .catch(() => {});
+
+    // Logo sekolah
+    const logoBox = document.getElementById('auth-logo-box');
+    const imgLogo = new Image();
+    imgLogo.src = '/api/public/logo?t=' + Date.now();
+    imgLogo.alt = 'Logo';
+    imgLogo.onload = () => {
+        logoBox.innerHTML = '';
+        logoBox.appendChild(imgLogo);
+    };
+
+    // 2. Load daftar profil guru yang sudah ada di database
+    async function loadProfilGuru() {
+        try {
+            const res = await fetch('/api/public/daftar-guru');
+            const result = await res.json();
+            if (result.sukses && result.data) {
+                daftarGuruList = result.data;
+                const select = document.getElementById('guru_select');
+                select.innerHTML = '<option value="">-- Pilih Nama Guru Terdaftar --</option>';
+                daftarGuruList.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g.id;
+                    opt.textContent = `${g.nama_lengkap} (NIP: ${g.nip || '-'})`;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (e) {
+            console.error('Gagal memuat profil guru:', e);
+        }
+    }
+
+    function onGuruSelected() {
+        const guruId = document.getElementById('guru_select').value;
+        if (guruId) {
+            const selected = daftarGuruList.find(g => g.id == guruId);
+            if (selected) {
+                document.getElementById('nama_lengkap').value = selected.nama_lengkap;
+            }
+        }
+    }
+
+    // 3. Toggle password visibility
+    function togglePasswordVisibility(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'fa-solid fa-eye-slash';
+        } else {
+            input.type = 'password';
+            icon.className = 'fa-solid fa-eye';
+        }
+    }
+
+    // 4. Password Strength Meter
+    function cekKekuatanPassword(pw) {
+        const bar = document.getElementById('strength-bar');
+        const text = document.getElementById('strength-text');
+        if (!pw) {
+            bar.style.width = '0%';
+            text.textContent = 'Kekuatan: Belum diisi';
+            return;
+        }
+
+        let score = 0;
+        if (pw.length >= 6) score += 25;
+        if (pw.length >= 8) score += 25;
+        if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score += 25;
+        if (/[0-9]/.test(pw) || /[^A-Za-z0-9]/.test(pw)) score += 25;
+
+        bar.style.width = score + '%';
+        if (score <= 25) {
+            bar.style.backgroundColor = 'var(--danger)';
+            text.textContent = 'Kekuatan: Lemah';
+        } else if (score <= 50) {
+            bar.style.backgroundColor = 'var(--warning)';
+            text.textContent = 'Kekuatan: Cukup';
+        } else if (score <= 75) {
+            bar.style.backgroundColor = 'var(--info)';
+            text.textContent = 'Kekuatan: Baik';
+        } else {
+            bar.style.backgroundColor = 'var(--success)';
+            text.textContent = 'Kekuatan: Sangat Kuat';
+        }
+    }
+
+    // 5. Alert & Submit handling
+    function showAlert(pesan, isSuccess = false) {
+        const alertBox = document.getElementById('alertBox');
+        alertBox.className = `alert-auth ${isSuccess ? 'alert-success' : 'alert-error'}`;
+        alertBox.innerHTML = `<i class="fa-solid ${isSuccess ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i> <span>${pesan}</span>`;
+        alertBox.style.display = 'flex';
+    }
+
+    async function prosesRegister() {
+        const guruId = document.getElementById('guru_select').value || null;
+        const namaLengkap = document.getElementById('nama_lengkap').value.trim();
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        const konfirmasiPassword = document.getElementById('konfirmasi_password').value;
+
+        if (!namaLengkap || !username || !password || !konfirmasiPassword) {
+            return showAlert('Semua bidang bertanda * wajib diisi!');
+        }
+        if (password.length < 6) {
+            return showAlert('Password minimal 6 karakter!');
+        }
+        if (password !== konfirmasiPassword) {
+            return showAlert('Konfirmasi password tidak cocok dengan password di atas!');
+        }
+
+        const btn = document.getElementById('btnRegister');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Mendaftarkan...</span>';
+        document.getElementById('alertBox').style.display = 'none';
+
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username,
+                    password,
+                    nama_lengkap: namaLengkap,
+                    guru_id: guruId
+                })
+            });
+
+            const data = await res.json();
+            if (data.sukses) {
+                showAlert(data.pesan, true);
+                document.getElementById('formRegister').reset();
+                cekKekuatanPassword('');
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Pendaftaran Terkirim!</span>';
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 3000);
+            } else {
+                showAlert(data.pesan || 'Gagal melakukan pendaftaran.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> <span>Daftarkan Akun Guru</span>';
+            }
+        } catch (e) {
+            showAlert('Terjadi kesalahan koneksi ke server. Coba lagi beberapa saat lagi.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> <span>Daftarkan Akun Guru</span>';
+        }
+    }
+
+    loadProfilGuru();
+</script>
+
+<script src="./js/animations.js"></script>
+</body>
+</html>

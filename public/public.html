@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Kehadiran Siswa - AbsenSekolah</title>
+    <meta name="description" content="Portal laporan kehadiran siswa harian, mingguan, dan bulanan secara real-time untuk orang tua dan wali siswa.">
+    <!-- Early theme check to prevent flash of wrong theme (FOUC) -->
+    <script>
+        (function() {
+            try {
+                var t = localStorage.getItem('app-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', t);
+            } catch(e){}
+        })();
+    </script>
+    <link rel="stylesheet" href="./css/shared.css">
+    <link rel="stylesheet" href="./css/animations.css">
+    <!-- Font Awesome 6.5.2 — self-hosted (berjalan offline) -->
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <style>
+        /* HEADER */
+        header {
+            background: linear-gradient(135deg, #3730A3 0%, #4F46E5 50%, #7C3AED 100%);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(79,70,229,0.25);
+        }
+        [data-theme="dark"] header {
+            background: linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4C1D95 100%);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .header-logo {
+            width: 48px;
+            height: 48px;
+            background: rgba(255,255,255,0.18);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .header-logo img { width: 100%; height: 100%; object-fit: cover; }
+        .header-title h1 { font-size: 19px; font-weight: 800; line-height: 1.2; letter-spacing: -0.3px; }
+        .header-title p { font-size: 12.5px; opacity: 0.85; margin-top: 2px; }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .header-badge {
+            background: rgba(255,255,255,0.14);
+            border: 1px solid rgba(255,255,255,0.28);
+            border-radius: var(--radius-pill);
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(8px);
+        }
+        .live-dot { width: 8px; height: 8px; background: #4ADE80; border-radius: 50%; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:0.6} }
+
+        /* MAIN CONTAINER */
+        main { max-width: 1200px; margin: 0 auto; padding: 24px 20px 60px; }
+
+        /* TANGGAL & STATUS BAR */
+        .status-bar {
+            background: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .status-date { font-size: 14.5px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+        .refresh-info { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+        #countdown-text { font-weight: 700; color: var(--primary); }
+
+        /* STATS GRID */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+        .stat-card {
+            background: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            padding: 18px 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .stat-icon { width: 48px; height: 48px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+        .stat-icon.total { background: var(--primary-light); color: var(--primary); }
+        .stat-icon.hadir { background: var(--success-light); color: var(--success); }
+        .stat-icon.terlambat { background: var(--warning-light); color: var(--warning); }
+        .stat-icon.absen { background: var(--danger-light); color: var(--danger); }
+        .stat-info h3 { font-size: 22px; font-weight: 800; line-height: 1.1; color: var(--text-main); }
+        .stat-info p { font-size: 12px; color: var(--text-muted); margin-top: 3px; font-weight: 500; }
+
+        /* INFO ATURAN JAM */
+        .rule-info-banner {
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(99, 102, 241, 0.05) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 12px 18px;
+            margin-bottom: 22px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--text-main);
+        }
+        .rule-info-banner i { color: var(--primary); font-size: 17px; }
+
+        /* PORTAL REKAP SISWA (G: INPUT NIS & DETAIL REKAP) */
+        .portal-nis-box {
+            background: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            border: 1.5px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 26px;
+            position: relative;
+        }
+        .portal-nis-box.active-search {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+        .portal-nis-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .portal-nis-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .portal-nis-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 18px;
+            max-width: 750px;
+        }
+
+        .nis-form-row {
+            display: flex;
+            gap: 10px;
+            max-width: 580px;
+            align-items: stretch;
+        }
+        .nis-input-wrap {
+            position: relative;
+            flex: 1;
+        }
+        .nis-input-wrap i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+        .nis-input-wrap input {
+            width: 100%;
+            padding: 12px 14px 12px 42px;
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-md);
+            outline: none;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            background: var(--bg-surface);
+            color: var(--text-main);
+            transition: all 0.2s;
+            min-height: 44px;
+            letter-spacing: 0.5px;
+        }
+        .nis-input-wrap input:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        /* Container Hasil Rekap Siswa */
+        #nis-result-container {
+            display: none;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px dashed var(--border-color);
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        .nis-student-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .nis-student-profile h3 {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+        .nis-student-profile span {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .nis-rekap-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .nis-sum-pill {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            text-align: center;
+        }
+        .nis-sum-pill strong {
+            display: block;
+            font-size: 18px;
+            font-weight: 800;
+        }
+        .nis-sum-pill span {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .nis-progress-section {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 14px 18px;
+            margin-bottom: 20px;
+        }
+
+        /* TAB PERIODE */
+        .tabs-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .period-tabs {
+            display: flex;
+            background: var(--border-color);
+            padding: 4px;
+            border-radius: var(--radius-md);
+            gap: 4px;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 38px;
+        }
+        .tab-btn.active {
+            background: var(--bg-surface);
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* REKAP PER KELAS GRID */
+        .rekap-kelas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+        .card-kelas {
+            background: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            padding: 18px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .card-kelas:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .card-kelas-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .card-kelas-head h3 {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .badge-kelas-total {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: var(--bg-subtle);
+            padding: 3px 10px;
+            border-radius: var(--radius-sm);
+        }
+
+        /* DAFTAR HARIAN FILTER & TABEL */
+        .daily-section-card {
+            background: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+        .daily-card-head {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .daily-card-head h2 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .filters-inline {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* FOOTER */
+        footer {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-muted);
+            font-size: 12.5px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-surface);
+        }
+        footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
+
+        /* PRINT STYLES */
+        @media print {
+            body { background: white !important; color: black !important; font-size: 11pt; }
+            header, .header-actions, .status-bar .refresh-info, .rule-info-banner,
+            .portal-nis-box, .period-tabs, .btn, footer, .filters-inline, .no-print {
+                display: none !important;
+            }
+            .print-header {
+                display: block !important;
+                border-bottom: 2px solid #000;
+                padding-bottom: 12px;
+                margin-bottom: 18px;
+                text-align: center;
+            }
+            .print-header-top {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 14px;
+            }
+            .print-logo { width: 50px; height: 50px; object-fit: contain; }
+            .print-header h1 { font-size: 18pt; font-weight: 800; margin: 0; }
+            .print-header p { font-size: 10pt; color: #444; margin: 2px 0 0; }
+            .print-meta { font-size: 9pt; color: #555; margin-top: 6px; }
+
+            .stat-card, .card-kelas, .daily-section-card {
+                border: 1px solid #ccc !important;
+                box-shadow: none !important;
+                page-break-inside: avoid;
+            }
+            table { border: 1px solid #ddd; }
+            thead th { background: #eee !important; color: #000 !important; }
+            tbody td { border-bottom: 1px solid #ddd !important; }
+        }
+
+        .print-header { display: none; }
+    </style>
+</head>
+<body>
+
+<!-- PRINT HEADER (Hanya muncul saat cetak) -->
+<div class="print-header">
+    <div class="print-header-top">
+        <img id="print-logo-img" class="print-logo" src="/api/public/logo" alt="Logo" onerror="this.style.display='none'">
+        <div>
+            <h1 id="print-nama-sekolah">AbsenSekolah</h1>
+            <p>LAPORAN REKAPITULASI KEHADIRAN SISWA</p>
+        </div>
+    </div>
+    <div class="print-meta">
+        Dicetak pada: <span id="print-tanggal-cetak">-</span> | Sumber: Sistem Absensi Digital Real-Time
+    </div>
+</div>
+
+<!-- HEADER UTAMA -->
+<header>
+    <div class="header-inner">
+        <div class="header-brand">
+            <div class="header-logo" id="logo-box">
+                <i class="fa-solid fa-school"></i>
+            </div>
+            <div class="header-title">
+                <h1 id="nama-sekolah">AbsenSekolah</h1>
+                <p>Portal Absensi &amp; Rekap Kehadiran Siswa (Publik)</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Ganti mode gelap/terang">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+            <div class="header-badge">
+                <div class="live-dot"></div>
+                <span>LIVE — Terbuka untuk Wali Siswa</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.print()" style="color: white; border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.15);">
+                <i class="fa-solid fa-print"></i> Cetak Laporan
+            </button>
+        </div>
+    </div>
+</header>
+
+<main>
+
+    <!-- STATUS & TANGGAL -->
+    <div class="status-bar">
+        <div class="status-date">
+            <i class="fa-solid fa-calendar-day" style="color: var(--primary);"></i>
+            <span id="tanggal-hari-ini">Memuat tanggal...</span>
+        </div>
+        <div class="refresh-info">
+            <i class="fa-solid fa-rotate"></i>
+            Pembaruan otomatis dalam <span id="countdown-text">30</span> detik
+        </div>
+    </div>
+
+    <!-- STATISTIK HARI INI -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon total"><i class="fa-solid fa-users"></i></div>
+            <div class="stat-info"><h3 id="stat-total">-</h3><p>Total Siswa Aktif</p></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon hadir"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="stat-info"><h3 id="stat-hadir">-</h3><p>Hadir Hari Ini</p></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon terlambat"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            <div class="stat-info"><h3 id="stat-terlambat">-</h3><p>Terlambat</p></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon absen"><i class="fa-solid fa-user-xmark"></i></div>
+            <div class="stat-info"><h3 id="stat-belum-hadir">-</h3><p>Belum Absen</p></div>
+        </div>
+    </div>
+
+    <!-- INFO ATURAN JAM -->
+    <div class="rule-info-banner">
+        <i class="fa-solid fa-circle-info"></i>
+        <div>
+            Batas waktu masuk tepat waktu: s.d. pukul <strong id="jam-masuk-text">07:15</strong> WIB. Absen setelah itu dihitung <strong>Terlambat</strong>. Waktu absen pulang dibuka pukul <strong id="jam-pulang-text">12:00</strong> WIB.
+        </div>
+    </div>
+
+    <!-- PORTAL REKAP SISWA BERDASARKAN NIS (BAGIAN G) -->
+    <div class="portal-nis-box" id="portal-nis-box">
+        <div class="portal-nis-header">
+            <div class="portal-nis-title">
+                <i class="fa-solid fa-id-card-clip" style="color: var(--primary);"></i>
+                Portal Cek Rekap Kehadiran Siswa (30 Hari)
+            </div>
+            <span class="badge badge-neutral">Tanpa Login &bull; Khusus Orang Tua &amp; Siswa</span>
+        </div>
+        <div class="portal-nis-subtitle">
+            Masukkan Nomor Induk Siswa (NIS) putra/putri Anda untuk memverifikasi rekapitulasi kehadiran 30 hari terakhir secara mandiri dan transparan.
+        </div>
+
+        <form id="form-cek-nis" onsubmit="event.preventDefault(); cekRekapNis();">
+            <div class="nis-form-row">
+                <div class="nis-input-wrap">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="input-nis" inputmode="numeric" placeholder="Masukkan NIS Siswa (contoh: 301240029 atau 121212)" required autocomplete="off">
+                </div>
+                <button type="submit" id="btn-cek-nis" class="btn btn-primary">
+                    <i class="fa-solid fa-search"></i> <span>Lihat Rekap</span>
+                </button>
+            </div>
+        </form>
+        <div id="nis-error-msg" class="form-error" style="display:none; margin-top: 10px; font-size: 13px;"></div>
+
+        <!-- HASIL REKAP SISWA (30 HARI) -->
+        <div id="nis-result-container">
+            <div class="nis-student-header">
+                <div class="nis-student-profile">
+                    <h3 id="nis-res-nama">-</h3>
+                    <span>NIS: <strong id="nis-res-nis">-</strong> &bull; Kelas: <strong id="nis-res-kelas">-</strong></span>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="cetakRekapSiswaIndividual()">
+                    <i class="fa-solid fa-print"></i> Cetak / Simpan Rekap
+                </button>
+            </div>
+
+            <!-- Ringkasan Kartu -->
+            <div class="nis-rekap-summary-grid">
+                <div class="nis-sum-pill" style="border-top: 3px solid var(--success);">
+                    <strong id="nis-sum-hadir" style="color: var(--success);">0</strong>
+                    <span>Hadir Tepat</span>
+                </div>
+                <div class="nis-sum-pill" style="border-top: 3px solid var(--warning);">
+                    <strong id="nis-sum-terlambat" style="color: var(--warning);">0</strong>
+                    <span>Terlambat</span>
+                </div>
+                <div class="nis-sum-pill" style="border-top: 3px solid var(--info);">
+                    <strong id="nis-sum-izin" style="color: var(--info);">0</strong>
+                    <span>Izin</span>
+                </div>
+                <div class="nis-sum-pill" style="border-top: 3px solid var(--purple);">
+                    <strong id="nis-sum-sakit" style="color: var(--purple);">0</strong>
+                    <span>Sakit</span>
+                </div>
+                <div class="nis-sum-pill" style="border-top: 3px solid var(--danger);">
+                    <strong id="nis-sum-alpa" style="color: var(--danger);">0</strong>
+                    <span>Alpa</span>
+                </div>
+            </div>
+
+            <!-- Progress Bar 30 Hari -->
+            <div class="nis-progress-section">
+                <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 6px;">
+                    <span style="color: var(--text-muted);">Persentase Kehadiran 30 Hari Terakhir</span>
+                    <span id="nis-pct-text" style="color: var(--success);">100%</span>
+                </div>
+                <div class="progress-bar-bg" style="height: 12px;">
+                    <div id="nis-pct-bar" class="progress-bar-fill progress-green" style="width: 100%;"></div>
+                </div>
+            </div>
+
+            <!-- Riwayat Per Tanggal -->
+            <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--text-main);">
+                <i class="fa-solid fa-clock-rotate-left" style="color: var(--primary); margin-right: 6px;"></i> Riwayat Kehadiran 30 Hari Terakhir
+            </h4>
+            <div class="table-responsive" style="max-height: 280px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                <table class="table-app">
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Jam Absen</th>
+                            <th>Status</th>
+                            <th>Keterangan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="nis-riwayat-tbody">
+                        <tr><td colspan="4" style="text-align:center; padding: 20px; color: var(--text-muted);">Memuat riwayat...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB REKAP PERIODE KELAS -->
+    <div class="tabs-header">
+        <div style="font-size: 16px; font-weight: 800; display:flex; align-items:center; gap:8px; color: var(--text-main);">
+            <i class="fa-solid fa-chart-column" style="color: var(--primary);"></i>
+            Rekap Kehadiran Per Kelas
+        </div>
+        <div class="period-tabs">
+            <button type="button" class="tab-btn active" data-periode="hari">
+                <i class="fa-solid fa-calendar-day"></i> Hari Ini
+            </button>
+            <button type="button" class="tab-btn" data-periode="minggu">
+                <i class="fa-solid fa-calendar-week"></i> Rekap Mingguan
+            </button>
+            <button type="button" class="tab-btn" data-periode="bulan">
+                <i class="fa-solid fa-calendar"></i> Rekap Bulanan
+            </button>
+        </div>
+    </div>
+
+    <!-- REKAP KELAS CARDS CONTAINER -->
+    <div id="rekap-kelas-grid" class="rekap-kelas-grid">
+        <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 8px;"></i>
+            <div>Memuat rekap kehadiran kelas...</div>
+        </div>
+    </div>
+
+    <!-- DAFTAR LOG HARIAN -->
+    <div class="daily-section-card">
+        <div class="daily-card-head">
+            <h2><i class="fa-solid fa-list-check" style="color: var(--primary);"></i>Daftar Kehadiran Siswa Hari Ini</h2>
+            <div class="filters-inline">
+                <input type="text" id="cari-tabel-harian" class="form-input" placeholder="Saring nama..." style="min-height: 38px; padding: 8px 12px; width: 180px;">
+                <select id="filter-kelas-harian" class="form-select" style="min-height: 38px; padding: 8px 12px; width: auto;">
+                    <option value="">Semua Kelas</option>
+                </select>
+                <span id="total-tampil-harian" class="badge badge-neutral">0 catatan</span>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table-app">
+                <thead>
+                    <tr>
+                        <th>Nama Siswa</th>
+                        <th>Kelas</th>
+                        <th>Status</th>
+                        <th>Keterangan</th>
+                        <th>Jam Scan</th>
+                    </tr>
+                </thead>
+                <tbody id="tabel-absensi">
+                    <tr><td colspan="5" style="text-align:center; padding: 30px; color: var(--text-muted);">Memuat data absensi...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+
+<footer>
+    <p>Data absensi publik diperbarui secara berkala &bull; <a href="/login">Portal Masuk Guru/Admin</a> &bull; <span id="footer-nama-sekolah">AbsenSekolah</span> &copy; 2026</p>
+</footer>
+
+<script src="./js/theme.js"></script>
+<script>
+    let REFRESH_INTERVAL = 30;
+    let countdown = REFRESH_INTERVAL;
+    let periodeAktif = 'hari';
+    let dataAbsensiHarian = [];
+    let currentSiswaRekapData = null;
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // 1. NAMA SEKOLAH DINAMIS DARI CONFIG
+    async function muatInfoSekolah() {
+        try {
+            const res = await fetch('/api/public/info-sekolah');
+            if (res.ok) {
+                const data = await res.json();
+                const nama = data.namaSekolah || 'AbsenSekolah';
+                document.getElementById('nama-sekolah').textContent = nama;
+                document.getElementById('print-nama-sekolah').textContent = nama;
+                document.getElementById('footer-nama-sekolah').textContent = nama;
+                document.title = `Portal Kehadiran Siswa - ${nama}`;
+            }
+        } catch (e) {
+            console.warn('[INFO SEKOLAH]', e);
+        }
+    }
+
+    // 2. LOGO SEKOLAH
+    function muatLogo() {
+        const logoBox = document.getElementById('logo-box');
+        const img = new Image();
+        img.src = '/api/public/logo?t=' + Date.now();
+        img.alt = 'Logo Sekolah';
+        img.onload = () => {
+            logoBox.innerHTML = '';
+            logoBox.appendChild(img);
+        };
+        img.onerror = () => {
+            logoBox.innerHTML = '<i class="fa-solid fa-school"></i>';
+        };
+    }
+
+    // 3. ATURAN JAM
+    async function muatAturanJam() {
+        try {
+            const res = await fetch('/api/public/aturan-jam');
+            if (res.ok) {
+                const d = await res.json();
+                if (d.sukses) {
+                    document.getElementById('jam-masuk-text').textContent = d.jamBatasMasuk || '07:15';
+                    document.getElementById('jam-pulang-text').textContent = d.jamPulangMulai || '12:00';
+                }
+            }
+        } catch (e) {}
+    }
+
+    // 4. STATISTIK RINGKASAN
+    async function muatStatistik() {
+        try {
+            const res = await fetch('/api/public/statistik');
+            if (res.ok) {
+                const s = await res.json();
+                document.getElementById('stat-total').textContent = s.totalSiswa || 0;
+                document.getElementById('stat-hadir').textContent = s.hadirPagi || 0;
+                document.getElementById('stat-terlambat').textContent = s.terlambat || 0;
+                const belum = s.belumAbsen !== undefined ? s.belumAbsen : Math.max(0, (s.totalSiswa || 0) - (s.totalSudahAbsen || 0));
+                document.getElementById('stat-belum-hadir').textContent = belum;
+            }
+        } catch (e) {}
+    }
+
+    // 5. REKAP PER KELAS SESUAI PERIODE
+    async function muatRekapKelas() {
+        const container = document.getElementById('rekap-kelas-grid');
+        try {
+            const res = await fetch(`/api/public/rekap?periode=${periodeAktif}`);
+            if (!res.ok) throw new Error('Gagal memuat rekap');
+            const result = await res.json();
+            const list = result.data || [];
+
+            if (!list.length) {
+                container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted); background: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
+                    <i class="fa-solid fa-folder-open" style="font-size: 32px; color: var(--text-muted); margin-bottom: 8px;"></i>
+                    <p>Belum ada data rekap per kelas untuk periode ini.</p>
+                </div>`;
+                return;
+            }
+
+            container.innerHTML = list.map(item => {
+                const pct = item.persentase || 0;
+                let colorClass = 'progress-red';
+                let textColor = 'var(--danger)';
+                if (pct >= 90) {
+                    colorClass = 'progress-green';
+                    textColor = 'var(--success)';
+                } else if (pct >= 75) {
+                    colorClass = 'progress-yellow';
+                    textColor = 'var(--warning)';
+                }
+
+                return `
+                <div class="card-kelas">
+                    <div class="card-kelas-head">
+                        <h3><i class="fa-solid fa-chalkboard-user" style="color: var(--primary);"></i> Kelas ${escapeHtml(item.kelas)}</h3>
+                        <span class="badge-kelas-total">${item.totalSiswa} Siswa</span>
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:700;">
+                            <span style="color: var(--text-muted);">Tingkat Kehadiran</span>
+                            <span style="color: ${textColor};">${pct}%</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill ${colorClass}" style="width: ${pct}%;"></div>
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;">
+                        <div style="background:var(--bg-subtle); border-radius:var(--radius-sm); padding:6px; text-align:center; font-size:11px;">
+                            <strong style="color:var(--success); font-size:13px; display:block;">${item.hadir}</strong>
+                            <span style="color:var(--text-muted);">Hadir</span>
+                        </div>
+                        <div style="background:var(--bg-subtle); border-radius:var(--radius-sm); padding:6px; text-align:center; font-size:11px;">
+                            <strong style="color:var(--info); font-size:13px; display:block;">${item.izin}</strong>
+                            <span style="color:var(--text-muted);">Izin</span>
+                        </div>
+                        <div style="background:var(--bg-subtle); border-radius:var(--radius-sm); padding:6px; text-align:center; font-size:11px;">
+                            <strong style="color:var(--purple); font-size:13px; display:block;">${item.sakit}</strong>
+                            <span style="color:var(--text-muted);">Sakit</span>
+                        </div>
+                        <div style="background:var(--bg-subtle); border-radius:var(--radius-sm); padding:6px; text-align:center; font-size:11px;">
+                            <strong style="color:var(--danger); font-size:13px; display:block;">${item.alpa}</strong>
+                            <span style="color:var(--text-muted);">Alpa</span>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        } catch (err) {
+            container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 30px; color: var(--danger);">Gagal memuat rekap kelas.</div>`;
+        }
+    }
+
+    // 6. DAFTAR KELAS DROPDOWN
+    async function muatDaftarKelas() {
+        try {
+            const res = await fetch('/api/public/daftar-kelas');
+            if (res.ok) {
+                const kelas = await res.json();
+                const sel = document.getElementById('filter-kelas-harian');
+                kelas.forEach(k => sel.appendChild(new Option(`Kelas ${k}`, k)));
+            }
+        } catch (e) {}
+    }
+
+    // 7. TABEL ABSENSI HARIAN
+    async function muatAbsensiHarian() {
+        const kelas = document.getElementById('filter-kelas-harian').value;
+        const cari = document.getElementById('cari-tabel-harian').value.trim();
+
+        let url = '/api/public/absensi-hari-ini';
+        const params = new URLSearchParams();
+        if (kelas) params.append('kelas', kelas);
+        if (cari) params.append('cari', cari);
+        if (params.toString()) url += '?' + params.toString();
+
+        try {
+            const res = await fetch(url);
+            if (res.ok) {
+                const d = await res.json();
+                if (d.tanggal) {
+                    document.getElementById('tanggal-hari-ini').textContent = d.tanggal;
+                    document.getElementById('print-tanggal-cetak').textContent = d.tanggal;
+                }
+                dataAbsensiHarian = d.data || [];
+                renderTabelHarian(dataAbsensiHarian);
+            }
+        } catch (e) {}
+    }
+
+    function renderTabelHarian(data) {
+        const tbody = document.getElementById('tabel-absensi');
+        const countEl = document.getElementById('total-tampil-harian');
+        countEl.textContent = `${data.length} catatan`;
+
+        if (!data.length) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">
+                <i class="fa-solid fa-clipboard-check" style="font-size: 32px; color: var(--text-muted); margin-bottom: 8px; display:block;"></i>
+                Belum ada data absensi untuk kriteria ini hari ini.
+            </td></tr>`;
+            return;
+        }
+
+        const badgeMap = {
+            'Masuk': 'badge-hadir',
+            'Terlambat': 'badge-terlambat',
+            'Pulang': 'badge-pulang',
+            'Sakit': 'badge-sakit',
+            'Izin': 'badge-izin',
+            'Alpa': 'badge-alpa'
+        };
+
+        tbody.innerHTML = data.map(r => {
+            const bClass = badgeMap[r.jenis_absen] || 'badge-hadir';
+            const ket = (r.keterangan && r.keterangan !== 'MANUAL') ? r.keterangan : '-';
+            return `<tr>
+                <td style="font-weight:600;">${escapeHtml(r.nama_lengkap)}</td>
+                <td><span class="badge badge-neutral">${escapeHtml(r.kelas)}</span></td>
+                <td><span class="badge ${bClass}">${escapeHtml(r.jenis_absen)}</span></td>
+                <td style="color: var(--text-muted); font-size: 13px;">${escapeHtml(ket)}</td>
+                <td style="color: var(--text-muted); font-size: 13px; font-variant-numeric: tabular-nums;">${r.jam_absen || '-'}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // 8. CEK REKAP SISWA BERDASARKAN NIS (BAGIAN G)
+    async function cekRekapNis() {
+        const nisInput = document.getElementById('input-nis');
+        const nis = nisInput.value.trim();
+        const errEl = document.getElementById('nis-error-msg');
+        const btn = document.getElementById('btn-cek-nis');
+        const resContainer = document.getElementById('nis-result-container');
+
+        errEl.style.display = 'none';
+        resContainer.style.display = 'none';
+
+        if (!nis || nis.length < 3) {
+            errEl.textContent = 'Masukkan minimal 3 karakter NIS valid.';
+            errEl.style.display = 'flex';
+            nisInput.focus();
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Mencari...</span>';
+
+        try {
+            const res = await fetch(`/api/public/siswa/rekap-30-hari?nis=${encodeURIComponent(nis)}`, {
+                headers: { 'Cache-Control': 'no-cache' }
+            });
+
+            if (res.status === 429) {
+                errEl.textContent = 'Terlalu banyak permintaan pencarian. Mohon tunggu beberapa menit lagi.';
+                errEl.style.display = 'flex';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-search"></i> <span>Lihat Rekap</span>';
+                return;
+            }
+
+            const data = await res.json();
+
+            if (!res.ok || !data.sukses) {
+                errEl.textContent = data.error || 'Data siswa dengan NIS tersebut tidak ditemukan.';
+                errEl.style.display = 'flex';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-search"></i> <span>Lihat Rekap</span>';
+                return;
+            }
+
+            // Tampilkan Data Siswa
+            const siswa = data.data;
+            currentSiswaRekapData = siswa;
+
+            document.getElementById('nis-res-nama').textContent = siswa.nama_lengkap;
+            document.getElementById('nis-res-nis').textContent = siswa.nis;
+            document.getElementById('nis-res-kelas').textContent = siswa.kelas;
+
+            const r = siswa.ringkasan || {};
+            document.getElementById('nis-sum-hadir').textContent = r.hadir || 0;
+            document.getElementById('nis-sum-terlambat').textContent = r.terlambat || 0;
+            document.getElementById('nis-sum-izin').textContent = r.izin || 0;
+            document.getElementById('nis-sum-sakit').textContent = r.sakit || 0;
+            document.getElementById('nis-sum-alpa').textContent = r.alpa || 0;
+
+            const pct = r.persentase || 0;
+            document.getElementById('nis-pct-text').textContent = pct + '%';
+            const bar = document.getElementById('nis-pct-bar');
+            bar.style.width = pct + '%';
+            if (pct >= 90) {
+                bar.className = 'progress-bar-fill progress-green';
+                document.getElementById('nis-pct-text').style.color = 'var(--success)';
+            } else if (pct >= 75) {
+                bar.className = 'progress-bar-fill progress-yellow';
+                document.getElementById('nis-pct-text').style.color = 'var(--warning)';
+            } else {
+                bar.className = 'progress-bar-fill progress-red';
+                document.getElementById('nis-pct-text').style.color = 'var(--danger)';
+            }
+
+            // Render riwayat tabel
+            const tbody = document.getElementById('nis-riwayat-tbody');
+            const riwayat = siswa.riwayat || [];
+            if (!riwayat.length) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 18px; color:var(--text-muted);">Belum ada catatan absensi dalam 30 hari terakhir.</td></tr>';
+            } else {
+                const badgeMap = {
+                    'Masuk': 'badge-hadir',
+                    'Terlambat': 'badge-terlambat',
+                    'Pulang': 'badge-pulang',
+                    'Sakit': 'badge-sakit',
+                    'Izin': 'badge-izin',
+                    'Alpa': 'badge-alpa'
+                };
+                tbody.innerHTML = riwayat.map(rw => {
+                    const bClass = badgeMap[rw.jenis_absen] || 'badge-hadir';
+                    return `<tr>
+                        <td>${rw.tanggal || '-'}</td>
+                        <td style="font-variant-numeric: tabular-nums;">${rw.jam ? rw.jam.substring(0, 5) : '-'}</td>
+                        <td><span class="badge ${bClass}">${escapeHtml(rw.jenis_absen)}</span></td>
+                        <td style="color: var(--text-muted);">${escapeHtml(rw.keterangan || '-')}</td>
+                    </tr>`;
+                }).join('');
+            }
+
+            resContainer.style.display = 'block';
+            resContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } catch (e) {
+            errEl.textContent = 'Gagal mengambil data rekap. Periksa koneksi Anda.';
+            errEl.style.display = 'flex';
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-search"></i> <span>Lihat Rekap</span>';
+        }
+    }
+
+    function cetakRekapSiswaIndividual() {
+        if (!currentSiswaRekapData) return;
+        window.print();
+    }
+
+    // 9. TAB EVENT LISTENERS
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            periodeAktif = btn.dataset.periode;
+            muatRekapKelas();
+        });
+    });
+
+    // 10. FILTER LISTENERS UNTUK DAFTAR HARIAN
+    document.getElementById('filter-kelas-harian').addEventListener('change', muatAbsensiHarian);
+    let filterDebounce;
+    document.getElementById('cari-tabel-harian').addEventListener('input', () => {
+        clearTimeout(filterDebounce);
+        filterDebounce = setTimeout(muatAbsensiHarian, 350);
+    });
+
+    // 11. COUNTDOWN & AUTO-REFRESH
+    function startCountdown() {
+        countdown = REFRESH_INTERVAL;
+        const countdownEl = document.getElementById('countdown-text');
+        const timer = setInterval(() => {
+            countdown--;
+            if (countdownEl) countdownEl.textContent = countdown;
+            if (countdown <= 0) {
+                clearInterval(timer);
+                refreshSemuaData().then(() => startCountdown());
+            }
+        }, 1000);
+    }
+
+    async function refreshSemuaData() {
+        await Promise.all([
+            muatStatistik(),
+            muatRekapKelas(),
+            muatAbsensiHarian()
+        ]);
+    }
+
+    // INIT
+    window.addEventListener('DOMContentLoaded', () => {
+        muatInfoSekolah();
+        muatLogo();
+        muatAturanJam();
+        muatStatistik();
+        muatDaftarKelas();
+        muatRekapKelas();
+        muatAbsensiHarian().then(() => startCountdown());
+    });
+</script>
+
+<script src="./js/animations.js"></script>
+</body>
+</html>

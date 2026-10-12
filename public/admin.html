@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - AbsenSekolah</title>
+    <meta name="description" content="Dashboard admin sistem absensi sekolah digital.">
+    <!-- Early theme check to prevent flash of wrong theme (FOUC) -->
+    <script>
+        (function() {
+            try {
+                var t = localStorage.getItem('app-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', t);
+            } catch(e){}
+        })();
+    </script>
+    <meta name="theme-color" content="#4F46E5">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="./css/shared.css">
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/animations.css">
+    <!-- Font Awesome 6.5.2 — self-hosted (berjalan offline) -->
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+</head>
+<body>
+
+<div class="dashboard-container">
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="brand">
+                <div class="brand-icon-box">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <span id="brand-nama-sekolah" class="brand-text">APLIKASI ABSENSI</span>
+            </div>
+            <button type="button" class="theme-toggle-btn theme-toggle-light sidebar-theme-toggle" onclick="toggleTheme()" aria-label="Ganti mode gelap/terang">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="#" id="menu-dashboard" class="active"><i class="fa-solid fa-border-all"></i> Dashboard</a></li>
+            <li><a href="#" id="menu-siswa"><i class="fa-solid fa-users"></i> Data Siswa</a></li>
+            <li><a href="#" id="menu-guru"><i class="fa-solid fa-chalkboard-user"></i> Data Guru</a></li>
+            <li><a href="#" id="menu-laporan"><i class="fa-solid fa-file-lines"></i> Laporan</a></li>
+            <li><a href="#" id="menu-users"><i class="fa-solid fa-user-gear"></i> Kelola User <span id="badge-pending-users" class="nav-badge" style="display:none;">0</span></a></li>
+            <li><a href="#" id="menu-pengaturan"><i class="fa-solid fa-sliders"></i> Pengaturan</a></li>
+            <li><a href="#" id="menu-scanner"><i class="fa-solid fa-camera"></i> Mode Scanner</a></li>
+        </ul>
+
+        <!-- Floating Profile Card in Sidebar (sesuai referensi Dribbble) -->
+        <div class="sidebar-user-card" onclick="document.getElementById('menu-pengaturan').click()" title="Kelola Profil">
+            <div class="sidebar-user-avatar-wrap">
+                <img src="https://ui-avatars.com/api/?name=Admin&background=EEF2FF&color=4F46E5" class="sidebar-user-avatar" id="sidebar-user-avatar" alt="Admin">
+                <span class="user-status-dot"></span>
+            </div>
+            <div class="sidebar-user-info">
+                <strong id="sidebar-user-name">Admin</strong>
+                <small>Pengaturan Akun</small>
+            </div>
+            <i class="fa-solid fa-chevron-right sidebar-user-arrow"></i>
+        </div>
+
+        <div class="logout-btn" id="btn-logout">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar
+        </div>
+    </aside>
+
+    <main class="main-content">
+
+        <!-- TOPBAR HEADER (GLASSMORPHISM STYLE) -->
+        <header class="main-topbar">
+            <div class="topbar-left">
+                <h1 class="topbar-title" id="topbar-page-title">Dashboard</h1>
+            </div>
+            <div class="topbar-search-wrap">
+                <i class="fa-solid fa-magnifying-glass topbar-search-icon"></i>
+                <input type="text" class="topbar-search-input" id="topbar-global-search" placeholder="Cari siswa, guru, kelas..." autocomplete="off">
+            </div>
+            <div class="topbar-right">
+                <a href="/scanner" class="btn-topbar-action" title="Buka Mode Scanner">
+                    <i class="fa-solid fa-camera"></i>
+                    <span>Scanner</span>
+                </a>
+                <button type="button" class="topbar-icon-btn" id="btn-topbar-notif" title="Notifikasi Kehadiran" onclick="document.getElementById('menu-laporan').click()">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="notif-badge-dot"></span>
+                </button>
+                <button type="button" class="topbar-icon-btn theme-toggle-btn" onclick="toggleTheme()" title="Ganti Mode Terang/Gelap" aria-label="Toggle Theme">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+                <div class="topbar-profile" onclick="document.getElementById('menu-pengaturan').click()" title="Pengaturan Profil">
+                    <img id="profile-avatar" src="https://ui-avatars.com/api/?name=Admin&background=4F46E5&color=fff" alt="Avatar" class="topbar-avatar">
+                    <div class="topbar-profile-info">
+                        <span id="profile-username" class="topbar-name">Admin</span>
+                        <span class="topbar-role">Administrator</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div id="view-dashboard">
+            <div class="welcome-banner">
+                <!-- Efek kilauan cahaya melintas (Light Sweep) -->
+                <div class="banner-light-sweep" aria-hidden="true"></div>
+
+                <!-- Lingkaran dekoratif -->
+                <div class="banner-deco-circle" aria-hidden="true"></div>
+
+                <!-- Konten teks banner -->
+                <div class="banner-content">
+                    <span class="banner-sapaan" id="banner-sapaan"></span>
+                    <h2 class="banner-title">
+                        Selamat Datang di
+                        <span class="banner-school-name" id="welcome-nama-sekolah">Memuat...</span>
+                    </h2>
+                    <p class="banner-desc banner-subtitle">
+                        Pantau kehadiran siswa &amp; guru serta kelola data sekolah dengan mudah secara real-time.
+                    </p>
+                    <a href="#" class="banner-btn" onclick="document.getElementById('menu-laporan').click(); return false;" aria-label="Lihat Laporan Absensi">
+                        <i class="fa-solid fa-chart-bar" aria-hidden="true"></i>
+                        <span>Lihat Laporan</span>
+                        <i class="fa-solid fa-arrow-right banner-btn-arrow" aria-hidden="true"></i>
+                    </a>
+                </div>
+
+                <!-- Ikon kanan — melayang + halo glow -->
+                <div class="banner-icon-wrap" aria-hidden="true">
+                    <div class="banner-icon-halo"></div>
+                    <i class="fa-solid fa-school banner-main-icon"></i>
+                </div>
+            </div>
+
+            <!-- 4 KARTU STATISTIK (SESUAI GAMBAR REFERENSI DRIBBBLE) -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon-wrap stat-icon-purple">
+                        <i class="fa-solid fa-user-graduate"></i>
+                    </div>
+                    <div class="stat-info-wrap">
+                        <p class="stat-card-label">Total Siswa</p>
+                        <h3 id="stat-siswa" class="stat-card-value">...</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon-wrap stat-icon-pink">
+                        <i class="fa-solid fa-chalkboard-user"></i>
+                    </div>
+                    <div class="stat-info-wrap">
+                        <p class="stat-card-label">Total Guru</p>
+                        <h3 id="stat-guru" class="stat-card-value">...</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon-wrap stat-icon-green">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <div class="stat-info-wrap">
+                        <p class="stat-card-label">Hadir Hari Ini</p>
+                        <h3 id="stat-hadir" class="stat-card-value">...</h3>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-highlight">
+                    <div class="stat-icon-wrap stat-icon-amber">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div class="stat-info-wrap">
+                        <p class="stat-card-label">Terlambat</p>
+                        <h3 id="stat-terlambat" class="stat-card-value">...</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GRAFIK DASHBOARD: DISTRIBUSI (DONUT) & TREN 7 HARI (LINE) -->
+            <div class="charts-container">
+                <div class="chart-glass-card">
+                    <div class="chart-card-header">
+                        <div class="chart-card-title">
+                            <span class="chart-badge-icon bg-indigo"><i class="fa-solid fa-chart-pie"></i></span>
+                            <div>
+                                <h4>Distribusi Kehadiran</h4>
+                                <small>Persentase status siswa &amp; guru hari ini</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="chart-distribusi-hari-ini"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-glass-card">
+                    <div class="chart-card-header">
+                        <div class="chart-card-title">
+                            <span class="chart-badge-icon bg-emerald"><i class="fa-solid fa-chart-line"></i></span>
+                            <div>
+                                <h4>Tren Kehadiran (7 Hari)</h4>
+                                <small>Riwayat kehadiran harian sekolah</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="chart-tren-7hari"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTTOM GRID: RIWAYAT ABSENSI + NOTIFIKASI & WAKTU SERVER -->
+            <div class="dashboard-bottom-grid">
+                <div class="glass-section-card">
+                    <div class="card-section-header">
+                        <div class="card-section-title">
+                            <span class="chart-badge-icon bg-purple"><i class="fa-solid fa-clipboard-user"></i></span>
+                            <div>
+                                <h3>Riwayat Absensi Terbaru</h3>
+                                <small>Catatan scan &amp; kehadiran hari ini</small>
+                            </div>
+                        </div>
+                        <a href="#" class="card-header-link" onclick="document.getElementById('menu-laporan').click(); return false;">
+                            Lihat Semua <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nama Lengkap</th>
+                                    <th>Peran</th>
+                                    <th>Waktu Scan</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabel-riwayat-dashboard">
+                                <tr><td colspan="4" style="text-align:center; color:#888;">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="glass-section-card">
+                    <div class="card-section-header">
+                        <div class="card-section-title">
+                            <span class="chart-badge-icon bg-pink"><i class="fa-solid fa-bell"></i></span>
+                            <div>
+                                <h3>Aktivitas &amp; Waktu</h3>
+                                <small>Status server &amp; sistem</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="live-clock-card">
+                        <div class="clock-badge"><span class="live-pulse-dot"></span> Waktu Server (WIB)</div>
+                        <div class="live-clock-time" id="clock-time">00:00:00</div>
+                        <div class="live-clock-date" id="clock-date">Memuat tanggal...</div>
+                    </div>
+
+                    <div class="notification-list">
+                        <div class="notification-item">
+                            <div class="notif-icon-box notif-icon-purple"><i class="fa-solid fa-qrcode"></i></div>
+                            <div class="notif-content">
+                                <div class="notif-title">Mode Scanner Siap</div>
+                                <div class="notif-sub">Kamera QR &amp; barcode reader aktif</div>
+                            </div>
+                            <span class="notif-time">Siap</span>
+                        </div>
+                        <div class="notification-item">
+                            <div class="notif-icon-box notif-icon-emerald"><i class="fa-solid fa-database"></i></div>
+                            <div class="notif-content">
+                                <div class="notif-title">Database Lokal Aman</div>
+                                <div class="notif-sub">Penyimpanan offline &amp; snapshot aktif</div>
+                            </div>
+                            <span class="notif-time">Sinkron</span>
+                        </div>
+                        <div class="notification-item">
+                            <div class="notif-icon-box notif-icon-pink"><i class="fa-solid fa-globe"></i></div>
+                            <div class="notif-content">
+                                <div class="notif-title">Portal Publik Orang Tua</div>
+                                <div class="notif-sub">Laporan kehadiran siswa transparan</div>
+                            </div>
+                            <a href="/" target="_blank" class="notif-time" style="color:#4F46E5; text-decoration:none; font-weight:700;">Buka ↗</a>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn-notification-all" onclick="document.getElementById('menu-laporan').click()">
+                        <i class="fa-solid fa-file-lines"></i> Buka Laporan Lengkap
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-siswa" style="display: none;">
+            <div class="header-action">
+                <h2 class="section-title" style="margin: 0;">Kelola Data Siswa</h2>
+                <div class="action-buttons">
+                    <button id="btn-input-absen" class="btn-primary" style="background: #0f766e;"><i class="fa-solid fa-clipboard-user"></i> Catat Absen Manual</button>
+                    <button id="btn-tambah" class="btn-primary"><i class="fa-solid fa-plus"></i> Tambah</button>
+                    <button id="btn-import" class="btn-success"><i class="fa-solid fa-file-excel"></i> Import</button>
+                    <button id="btn-export" class="btn-warning"><i class="fa-solid fa-download"></i> Export</button>
+                    <button id="btn-download-zip" class="btn-secondary" style="background: #8B5CF6; color: white; border: none;"><i class="fa-solid fa-file-zipper"></i> Download ZIP Kelas</button>
+                    <input type="file" id="input-excel" accept=".xlsx, .xls" style="display: none;">
+                </div>
+            </div>
+            <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 11px; color: #888;"></i>
+                        <input type="text" id="search-siswa" placeholder="Cari Nama atau NIS..." style="padding: 8px 12px 8px 35px; border-radius: 8px; border: 1px solid #ddd; outline: none; width: 220px; font-family: 'Poppins';">
+                    </div>
+                    <select id="filter-kelas" style="padding: 8px; border-radius: 8px; border: 1px solid #ddd; font-family: 'Poppins';"></select>
+                    <select id="filter-status" style="padding: 8px; border-radius: 8px; border: 1px solid #ddd; font-family: 'Poppins';">
+                        <option value="Aktif">Hanya Aktif</option><option value="Semua">Semua Status</option>
+                    </select>
+                </div>
+                <div id="summary-kelas" style="font-size: 14px; font-weight: 600; color: #4F46E5; background: #EEF2FF; padding: 8px 15px; border-radius: 8px;">Total: 0 Siswa</div>
+            </div>
+            <div class="table-container" style="margin-top: 15px;">
+                <table>
+                    <thead><tr><th>NIS / QR</th><th>Nama Lengkap</th><th>Kelas</th><th>Status</th><th>Aksi</th></tr></thead>
+                    <tbody id="tabel-data-siswa"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-guru" style="display: none;">
+            <div class="header-action">
+                <h2 class="section-title" style="margin: 0;">Kelola Data Guru</h2>
+                <div class="action-buttons">
+                    <button id="btn-tambah-guru" class="btn-primary"><i class="fa-solid fa-plus"></i> Tambah Guru</button>
+                </div>
+            </div>
+            <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 11px; color: #888;"></i>
+                        <input type="text" id="search-guru" placeholder="Cari Nama atau NIP..." style="padding: 8px 12px 8px 35px; border-radius: 8px; border: 1px solid #ddd; outline: none; width: 250px; font-family: 'Poppins';">
+                    </div>
+                    <select id="filter-status-guru" style="padding: 8px; border-radius: 8px; border: 1px solid #ddd; font-family: 'Poppins';">
+                        <option value="Aktif">Hanya Aktif</option><option value="Semua">Semua Status</option>
+                    </select>
+                </div>
+                <div id="summary-guru" style="font-size: 14px; font-weight: 600; color: #10B981; background: #D1FAE5; padding: 8px 15px; border-radius: 8px;">Total: 0 Guru</div>
+            </div>
+            <div class="table-container" style="margin-top: 15px;">
+                <table>
+                    <thead><tr><th>NIP / Kode</th><th>Nama Lengkap</th><th>Jabatan / Mapel</th><th>Status</th><th>Aksi</th></tr></thead>
+                    <tbody id="tabel-data-guru"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-laporan" style="display: none;">
+            <div class="header-action">
+                <h2 class="section-title" style="margin: 0;">Laporan Absensi</h2>
+                <div class="action-buttons">
+                    <button id="btn-export-laporan" class="btn-success"><i class="fa-solid fa-file-excel"></i> Export Excel</button>
+                </div>
+            </div>
+            <div style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 15px; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <div>
+                        <label style="font-size: 12px; color: #888; display: block; margin-bottom: 5px;">Mulai Tanggal</label>
+                        <input type="date" id="filter-tgl-mulai" style="padding: 8px; border-radius: 8px; border: 1px solid #ddd; font-family: 'Poppins';">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #888; display: block; margin-bottom: 5px;">Sampai Tanggal</label>
+                        <input type="date" id="filter-tgl-akhir" style="padding: 8px; border-radius: 8px; border: 1px solid #ddd; font-family: 'Poppins';">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #888; display: block; margin-bottom: 5px;">Peran</label>
+                        <select id="filter-peran-lap" style="padding: 8px; border-radius: 8px; border: 1px solid #ddd; font-family: 'Poppins';">
+                            <option value="Semua">Semua Peran</option>
+                            <option value="Siswa">Siswa</option>
+                            <option value="Guru">Guru</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #888; display: block; margin-bottom: 5px;">Kelas / Jabatan</label>
+                        <select id="filter-kelas-lap" style="padding: 8px; border-radius: 8px; border: 1px solid #ddd; font-family: 'Poppins'; width: 150px;">
+                            <option value="Semua">Semua Kelas/Jabatan</option>
+                        </select>
+                    </div>
+                    <div style="align-self: flex-end;">
+                        <button id="btn-cari-laporan" class="btn-primary" style="padding: 9px 15px;"><i class="fa-solid fa-magnifying-glass"></i> Tampilkan</button>
+                    </div>
+                </div>
+            </div>
+            <div class="table-container" style="margin-top: 15px;">
+                <table>
+                    <thead><tr><th>Tanggal &amp; Waktu</th><th>NIS / NIP</th><th>Nama Lengkap</th><th>Peran</th><th>Kelas/Jabatan</th><th>Status</th><th>Keterangan</th><th>Aksi</th></tr></thead>
+                    <tbody id="tabel-data-laporan">
+                        <tr><td colspan="8" style="text-align:center;">Silakan pilih filter dan klik "Tampilkan"</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VIEW PENGATURAN (hanya tab yang relevan: Akun, Profil, Absensi) -->
+        <div id="view-pengaturan" style="display: none;">
+            <div class="header-action">
+                <h2 class="section-title" style="margin: 0;"><i class="fa-solid fa-sliders" style="color:#4F46E5; margin-right:8px;"></i> Pengaturan Aplikasi</h2>
+            </div>
+
+            <div class="settings-tabs" style="display:flex; gap:8px; margin-top:15px; margin-bottom:20px; border-bottom:2px solid #EEF0FF; padding-bottom:0; flex-wrap:wrap;">
+                <button class="tab-btn active" data-tab="tab-akun"><i class="fa-solid fa-user-shield"></i> Akun Login</button>
+                <button class="tab-btn" data-tab="tab-profil"><i class="fa-solid fa-school"></i> Profil Sekolah</button>
+                <button class="tab-btn" data-tab="tab-absensi"><i class="fa-solid fa-clock"></i> Waktu Absensi</button>
+                <button class="tab-btn" data-tab="tab-kalender"><i class="fa-solid fa-calendar-days"></i> Hari Operasional &amp; Libur</button>
+                <button class="tab-btn" data-tab="tab-backup"><i class="fa-solid fa-database"></i> Backup &amp; Pemeliharaan</button>
+            </div>
+
+            <!-- TAB: AKUN LOGIN -->
+            <div id="tab-akun" class="settings-tab-content">
+                <div class="settings-card">
+                    <div class="settings-card-header">
+                        <i class="fa-solid fa-user-shield"></i>
+                        <div><h3>Akun Login Admin</h3><p>Ubah username dan password untuk masuk ke dashboard ini.</p></div>
+                    </div>
+                    <div class="settings-form-group">
+                        <label>Username Saat Ini</label>
+                        <input type="text" id="set-username-lama" disabled placeholder="Memuat..." style="background:#f5f5f5; color:#888;">
+                    </div>
+                    <div class="settings-form-group">
+                        <label>Username Baru</label>
+                        <input type="text" id="set-username-baru" placeholder="Masukkan username baru" autocomplete="off">
+                    </div>
+                    <div class="settings-form-group">
+                        <label>Password Baru</label>
+                        <div style="position:relative;">
+                            <input type="password" id="set-password-baru" placeholder="Biarkan kosong jika tidak ingin diubah" autocomplete="new-password">
+                            <i class="fa-solid fa-eye" id="toggle-pw-baru" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;"></i>
+                        </div>
+                    </div>
+                    <div class="settings-form-group">
+                        <label>Konfirmasi Password Baru</label>
+                        <div style="position:relative;">
+                            <input type="password" id="set-password-konfirm" placeholder="Ketik ulang password baru" autocomplete="new-password">
+                            <i class="fa-solid fa-eye" id="toggle-pw-konfirm" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;"></i>
+                        </div>
+                    </div>
+                    <div style="margin-top:5px;">
+                        <button id="btn-simpan-akun" class="btn-settings-save"><i class="fa-solid fa-key"></i> Simpan Akun</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: PROFIL SEKOLAH -->
+            <div id="tab-profil" class="settings-tab-content" style="display:none;">
+                <div class="settings-card">
+                    <div class="settings-card-header">
+                        <i class="fa-solid fa-school"></i>
+                        <div><h3>Profil &amp; Logo Sekolah</h3><p>Ubah nama dan logo yang tampil di aplikasi.</p></div>
+                    </div>
+                    <div class="settings-form-group">
+                        <label>Nama Sekolah / Aplikasi</label>
+                        <input type="text" id="set-nama-sekolah" placeholder="Contoh: SMPN 1 Contoh">
+                    </div>
+                    <div class="settings-form-group">
+                        <label>Logo Sekolah</label>
+                        <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
+                            <div id="logo-preview-box" style="width:80px; height:80px; border-radius:12px; border:2px dashed #ddd; display:flex; align-items:center; justify-content:center; background:#F8F9FF; overflow:hidden;">
+                                <img id="logo-preview" src="" style="display:none; width:100%; height:100%; object-fit:contain;">
+                                <i id="logo-placeholder-icon" class="fa-solid fa-image" style="font-size:28px; color:#ccc;"></i>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:8px;">
+                                <label id="btn-pilih-logo" class="btn-settings-save" style="background:#4F46E5; cursor:pointer; display:inline-flex; align-items:center; gap:8px;">
+                                    <i class="fa-solid fa-upload"></i> Pilih Logo
+                                    <input type="file" id="input-logo" accept=".png,.jpg,.jpeg,.gif,.svg,.webp" style="display:none;">
+                                </label>
+                                <button id="btn-hapus-logo" class="btn-settings-danger"><i class="fa-solid fa-trash"></i> Hapus Logo</button>
+                            </div>
+                        </div>
+                        <small style="color:#888; display:block; margin-top:8px;">Format: PNG, JPG, SVG. Maks 5MB.</small>
+                    </div>
+                    <div style="margin-top:5px;">
+                        <button id="btn-simpan-profil" class="btn-settings-save"><i class="fa-solid fa-save"></i> Simpan Profil</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: ABSENSI -->
+            <div id="tab-absensi" class="settings-tab-content" style="display:none;">
+                <div class="settings-card">
+                    <div class="settings-card-header">
+                        <i class="fa-solid fa-clock" style="color:#F59E0B;"></i>
+                        <div><h3>Pengaturan Waktu Absensi</h3><p>Tentukan batas jam masuk dan jam mulai pulang.</p></div>
+                    </div>
+                    <div class="settings-form-group">
+                        <label><i class="fa-solid fa-triangle-exclamation" style="color:#EF4444;"></i> Batas Jam Masuk (Terlambat jika lewat)</label>
+                        <input type="time" id="set-jam-batas-masuk" style="width:200px;">
+                        <small style="color:#888; display:block; margin-top:5px;">Siswa yang scan setelah jam ini akan dianggap <strong>Terlambat</strong>.</small>
+                    </div>
+                    <div class="settings-form-group">
+                        <label><i class="fa-solid fa-right-from-bracket" style="color:#10B981;"></i> Jam Mulai Pulang</label>
+                        <input type="time" id="set-jam-pulang" style="width:200px;">
+                        <small style="color:#888; display:block; margin-top:5px;">Scan setelah jam ini akan dianggap absen <strong>Pulang</strong>.</small>
+                    </div>
+                    <div style="margin-top:5px;">
+                        <button id="btn-simpan-absensi" class="btn-settings-save"><i class="fa-solid fa-save"></i> Simpan Pengaturan</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: HARI OPERASIONAL & LIBUR -->
+            <div id="tab-kalender" class="settings-tab-content" style="display:none;">
+                <div class="settings-card">
+                    <div class="settings-card-header">
+                        <i class="fa-solid fa-calendar-days" style="color:#0ea5e9;"></i>
+                        <div><h3>Hari Operasional Sekolah</h3><p>Pilih hari masuk sekolah (siswa tidak dapat absen pada hari libur rutin).</p></div>
+                    </div>
+                    <div class="settings-form-group">
+                        <label>Hari Masuk Sekolah Aktif</label>
+                        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;" id="wrap-hari-op">
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="hari-1" value="1"> Senin</label>
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="hari-2" value="2"> Selasa</label>
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="hari-3" value="3"> Rabu</label>
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="hari-4" value="4"> Kamis</label>
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="hari-5" value="5"> Jumat</label>
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="hari-6" value="6"> Sabtu</label>
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="hari-0" value="0"> Minggu</label>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px;">
+                        <button id="btn-simpan-hari-op" class="btn-settings-save"><i class="fa-solid fa-save"></i> Simpan Hari Kerja</button>
+                    </div>
+                </div>
+
+                <div class="settings-card" style="margin-top:20px;">
+                    <div class="settings-card-header">
+                        <i class="fa-solid fa-calendar-xmark" style="color:#ef4444;"></i>
+                        <div><h3>Daftar Libur Khusus / Nasional</h3><p>Tetapkan tanggal merah atau libur semester tertentu.</p></div>
+                    </div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px; align-items:flex-end;">
+                        <div>
+                            <label style="font-size:12px; color:#64748b; display:block; margin-bottom:5px;">Tanggal Libur</label>
+                            <input type="date" id="input-tgl-libur" style="padding:10px; border-radius:8px; border:1px solid #ddd; font-family:'Poppins';">
+                        </div>
+                        <div style="flex:1; min-width:200px;">
+                            <label style="font-size:12px; color:#64748b; display:block; margin-bottom:5px;">Keterangan Libur</label>
+                            <input type="text" id="input-ket-libur" placeholder="Contoh: Libur Hari Kemerdekaan RI" style="padding:10px; border-radius:8px; border:1px solid #ddd; font-family:'Poppins'; width:100%;">
+                        </div>
+                        <button id="btn-tambah-libur" class="btn-primary" style="padding:10px 18px;"><i class="fa-solid fa-plus"></i> Tambah Libur</button>
+                    </div>
+                    <div class="table-container" style="border:1px solid #f1f5f9; border-radius:8px;">
+                        <table>
+                            <thead><tr><th>Tanggal</th><th>Keterangan</th><th>Aksi</th></tr></thead>
+                            <tbody id="tabel-hari-libur">
+                                <tr><td colspan="3" style="text-align:center; color:#888;">Belum ada hari libur khusus yang ditambahkan.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: BACKUP & PEMELIHARAAN -->
+            <div id="tab-backup" class="settings-tab-content" style="display:none;">
+                <div class="settings-card">
+                    <div class="settings-card-header">
+                        <i class="fa-solid fa-cloud-arrow-down" style="color:#10b981;"></i>
+                        <div><h3>Backup Database</h3><p>Amankan seluruh data sekolah dan absensi dalam format SQLite.</p></div>
+                    </div>
+                    <p style="font-size:13px; color:#64748b; margin-bottom:15px; line-height:1.6;">
+                        Sistem otomatis membuat backup setiap hari jam 02:00 WIB. Anda juga dapat mengunduh atau membuat snapshot manual sewaktu-waktu.
+                    </p>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                        <button id="btn-download-db" class="btn-primary" style="background:#10B981; display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-download"></i> Unduh Database (.sqlite)
+                        </button>
+                        <button id="btn-buat-backup-snapshot" class="btn-primary" style="background:#4F46E5; display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-camera"></i> Buat Snapshot Lokal
+                        </button>
+                    </div>
+                    <div style="margin-top:20px;">
+                        <h4 style="font-size:14px; margin-bottom:10px; color:#334155;">Riwayat Snapshot Backup Lokal</h4>
+                        <div class="table-container" style="border:1px solid #f1f5f9; border-radius:8px; max-height:220px; overflow-y:auto;">
+                            <table>
+                                <thead><tr><th>Nama File</th><th>Ukuran</th><th>Waktu Dibuat</th></tr></thead>
+                                <tbody id="tabel-riwayat-backup">
+                                    <tr><td colspan="3" style="text-align:center; color:#888;">Memuat riwayat backup...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-card" style="margin-top:20px;">
+                    <div class="settings-card-header">
+                        <i class="fa-solid fa-trash-can" style="color:#f59e0b;"></i>
+                        <div><h3>Pembersihan Log &amp; Sisa File Lama</h3><p>Optimalkan ruang penyimpanan server dan bersihkan cache/log.</p></div>
+                    </div>
+                    <p style="font-size:13px; color:#64748b; margin-bottom:15px; line-height:1.6;">
+                        Tindakan ini menghapus folder sesi WhatsApp lama yang tidak lagi digunakan, mereset file log server yang membengkak, dan menghapus cache upload sementara tanpa menghapus database kehadiran.
+                    </p>
+                    <button id="btn-jalankan-cleanup" class="btn-warning" style="display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-broom"></i> Bersihkan Log &amp; Sisa File Sekarang
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW KELOLA USER -->
+        <div id="view-users" style="display: none;">
+            <div class="header-action">
+                <h2 class="section-title" style="margin: 0;"><i class="fa-solid fa-user-gear" style="color:#4F46E5; margin-right:8px;"></i> Kelola Akun Pengguna</h2>
+            </div>
+            <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <select id="filter-role-user" style="padding: 8px; border-radius: 8px; border: 1px solid #ddd; font-family: 'Poppins';">
+                        <option value="Semua">Semua Role</option>
+                        <option value="admin">Admin</option>
+                        <option value="guru">Guru</option>
+                    </select>
+                    <select id="filter-status-user" style="padding: 8px; border-radius: 8px; border: 1px solid #ddd; font-family: 'Poppins';">
+                        <option value="Semua">Semua Status</option>
+                        <option value="pending">Pending (Menunggu Approve)</option>
+                        <option value="approved">Approved (Aktif)</option>
+                        <option value="rejected">Rejected (Ditolak)</option>
+                    </select>
+                </div>
+                <div id="summary-users" style="font-size: 14px; font-weight: 600; color: #4F46E5; background: #EEF2FF; padding: 8px 15px; border-radius: 8px;">Total: 0 User</div>
+            </div>
+            <div class="table-container" style="margin-top: 15px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Nama Lengkap</th>
+                            <th>Profil Guru Linked</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Tanggal Daftar</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabel-data-users">
+                        <tr><td colspan="7" style="text-align:center;">Memuat data user...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+</div>
+
+<!-- MODALS -->
+<div id="modal-tambah" class="modal">
+    <div class="modal-content">
+        <h3>Tambah Siswa Baru</h3>
+        <input type="text" id="input-nis" placeholder="NIS (Akan jadi QR Code)" autocomplete="off">
+        <input type="text" id="input-nama" placeholder="Nama Lengkap" autocomplete="off">
+        <select id="input-kelas" style="padding: 12px 15px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 14px; font-family: 'Poppins';"></select>
+        <div class="modal-buttons"><button id="btn-simpan" class="btn-primary">Simpan</button><button class="btn-danger btn-tutup-modal">Batal</button></div>
+    </div>
+</div>
+
+<div id="modal-edit" class="modal">
+    <div class="modal-content">
+        <h3>Edit Data Siswa</h3>
+        <input type="hidden" id="edit-id">
+        <input type="text" id="edit-nis" placeholder="NIS" autocomplete="off">
+        <input type="text" id="edit-nama" placeholder="Nama Lengkap" autocomplete="off">
+        <select id="edit-kelas" style="padding: 12px 15px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 14px; font-family: 'Poppins';"></select>
+        <select id="edit-status" style="padding: 12px 15px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 14px; font-family: 'Poppins';">
+            <option value="Aktif">Aktif</option><option value="Pindah">Pindah Sekolah</option><option value="Lulus">Lulus</option>
+        </select>
+        <div class="modal-buttons"><button id="btn-update" class="btn-primary">Update</button><button class="btn-danger btn-tutup-modal">Batal</button></div>
+    </div>
+</div>
+
+<div id="modal-tambah-guru" class="modal">
+    <div class="modal-content">
+        <h3>Tambah Data Guru</h3>
+        <input type="text" id="input-nip" placeholder="NIP / Kode Guru (Akan jadi QR Code)" autocomplete="off">
+        <input type="text" id="input-nama-guru" placeholder="Nama Lengkap beserta Gelar" autocomplete="off">
+        <input type="text" id="input-jabatan" placeholder="Jabatan / Mapel (Ex: Guru Informatika)" autocomplete="off">
+        <div class="modal-buttons"><button id="btn-simpan-guru" class="btn-primary">Simpan</button><button class="btn-danger btn-tutup-modal">Batal</button></div>
+    </div>
+</div>
+
+<div id="modal-edit-guru" class="modal">
+    <div class="modal-content">
+        <h3>Edit Data Guru</h3>
+        <input type="hidden" id="edit-id-guru">
+        <input type="text" id="edit-nip" placeholder="NIP / Kode Guru" autocomplete="off">
+        <input type="text" id="edit-nama-guru" placeholder="Nama Lengkap" autocomplete="off">
+        <input type="text" id="edit-jabatan" placeholder="Jabatan / Mapel" autocomplete="off">
+        <select id="edit-status-guru" style="padding: 12px 15px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 14px; font-family: 'Poppins';">
+            <option value="Aktif">Aktif</option><option value="Pindah">Pindah Tugas / Resign</option><option value="Pensiun">Pensiun</option>
+        </select>
+        <div class="modal-buttons"><button id="btn-update-guru" class="btn-primary">Update</button><button class="btn-danger btn-tutup-modal">Batal</button></div>
+    </div>
+</div>
+
+<div id="modal-input-absen" class="modal">
+    <div class="modal-content">
+        <h3>Input Ketidakhadiran (Sakit/Izin/Alpa)</h3>
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">Ketik Nama atau NIS untuk mencari data siswa.</p>
+        <input type="text" id="input-cari-absen" list="list-siswa-absen" placeholder="Cari Nama / NIS..." autocomplete="off" style="padding: 12px 15px; border: 1px solid #ddd; border-radius: 8px; width: 100%; font-family: 'Poppins'; margin-bottom: 15px;">
+        <datalist id="list-siswa-absen"></datalist>
+        <select id="input-status-absen" style="padding: 12px 15px; border: 1px solid #ddd; border-radius: 8px; width: 100%; font-family: 'Poppins'; margin-bottom: 15px;">
+            <option value="Sakit">Sakit</option><option value="Izin">Izin</option><option value="Alpa">Alpa</option>
+        </select>
+        <textarea id="input-keterangan-absen" rows="3" placeholder="Keterangan Tambahan (Opsional)..." style="width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 8px; font-family: 'Poppins'; resize: vertical; margin-bottom: 20px;"></textarea>
+        <div class="modal-buttons"><button id="btn-simpan-absen" class="btn-primary">Simpan Absen</button><button class="btn-danger btn-tutup-modal">Batal</button></div>
+    </div>
+</div>
+
+<div id="modal-detail" class="modal">
+    <div class="modal-content" style="width: 450px;">
+        <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 20px;">
+            <img src="https://ui-avatars.com/api/?name=S&background=EEF2FF&color=4F46E5" id="det-avatar" style="border-radius: 50%; width: 70px; height: 70px; object-fit: cover;">
+            <div>
+                <h3 id="det-nama" style="margin:0; font-size: 22px;">Nama</h3>
+                <p id="det-nis" style="color: #888; margin: 5px 0;">ID: - | Info: -</p>
+                <span id="det-status" class="badge-status-aktif">Aktif</span>
+            </div>
+        </div>
+        <h4 style="margin-bottom: 10px; color: #444;">Rekap Absensi (Total)</h4>
+        <div style="display: flex; justify-content: space-around; background: #F8F9FF; padding: 15px; border-radius: 8px; border: 1px solid #EEF0FF;">
+            <div style="text-align: center;"><strong id="rek-masuk" style="color:#10B981; font-size: 24px;">0</strong><br><small>Masuk</small></div>
+            <div style="text-align: center;"><strong id="rek-pulang" style="color:#F59E0B; font-size: 24px;">0</strong><br><small>Pulang</small></div>
+        </div>
+        <div class="modal-buttons" style="margin-top: 20px;"><button class="btn-secondary btn-tutup-modal">Tutup</button></div>
+    </div>
+</div>
+
+<div id="modal-edit-absen" class="modal">
+    <div class="modal-content" style="width: 440px;">
+        <h3><i class="fa-solid fa-pen-to-square" style="color:#4F46E5; margin-right:8px;"></i> Koreksi Data Absensi</h3>
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">Ubah status kehadiran atau keterangan absensi siswa/guru.</p>
+        <input type="hidden" id="edit-absen-id">
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; margin-bottom:14px; font-size:13px; line-height:1.6;">
+            <div><strong>Nama:</strong> <span id="edit-absen-nama">-</span></div>
+            <div><strong>NIS / NIP:</strong> <span id="edit-absen-nomor">-</span> (<span id="edit-absen-peran">-</span>)</div>
+            <div><strong>Waktu:</strong> <span id="edit-absen-waktu">-</span></div>
+        </div>
+        <div style="margin-bottom:14px;">
+            <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:5px;">Status Kehadiran *</label>
+            <select id="edit-absen-status" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-family:'Poppins';">
+                <option value="Masuk">Masuk</option>
+                <option value="Pulang">Pulang</option>
+                <option value="Terlambat">Terlambat</option>
+                <option value="Sakit">Sakit</option>
+                <option value="Izin">Izin</option>
+                <option value="Alpa">Alpa</option>
+            </select>
+        </div>
+        <div style="margin-bottom:18px;">
+            <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:5px;">Keterangan</label>
+            <textarea id="edit-absen-keterangan" rows="3" placeholder="Alasan koreksi atau catatan dispensasi..." style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-family:'Poppins'; resize:vertical;"></textarea>
+        </div>
+        <div class="modal-buttons">
+            <button id="btn-update-absen" class="btn-primary"><i class="fa-solid fa-check"></i> Simpan Perubahan</button>
+            <button class="btn-danger btn-tutup-modal">Batal</button>
+        </div>
+    </div>
+</div>
+
+<div id="qrcode-temp" style="display:none;"></div>
+
+<!-- MODAL WAJIB GANTI PASSWORD — muncul jika login dengan password default -->
+<div id="modal-ganti-password-wajib" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,0.85); backdrop-filter:blur(8px); justify-content:center; align-items:center;">
+    <div style="background:white; border-radius:24px; padding:40px 44px; width:420px; box-shadow:0 25px 60px rgba(0,0,0,0.4); animation:popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275);">
+        <div style="text-align:center; margin-bottom:24px;">
+            <div style="width:68px;height:68px;background:#FEF3C7;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:30px;">⚠️</div>
+            <h2 style="margin:0;font-size:20px;color:#1e293b;font-weight:800;">Ganti Password Sekarang</h2>
+            <p style="color:#64748b;font-size:13px;margin-top:8px;line-height:1.6;">Anda masih menggunakan <strong>password default</strong>. Demi keamanan, wajib mengganti password sebelum menggunakan aplikasi.</p>
+        </div>
+        <div style="margin-bottom:16px;">
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Password Baru <span style="color:#ef4444">*</span></label>
+            <input type="password" id="ganti-pw-baru" placeholder="Minimal 8 karakter" style="width:100%;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;outline:none;font-family:'Poppins','Inter',sans-serif;font-size:14px;transition:0.2s;" onfocus="this.style.borderColor='#4F46E5'" onblur="this.style.borderColor='#e2e8f0'">
+        </div>
+        <div style="margin-bottom:20px;">
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Konfirmasi Password <span style="color:#ef4444">*</span></label>
+            <input type="password" id="ganti-pw-konfirm" placeholder="Ketik ulang password baru" style="width:100%;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;outline:none;font-family:'Poppins','Inter',sans-serif;font-size:14px;transition:0.2s;" onfocus="this.style.borderColor='#4F46E5'" onblur="this.style.borderColor='#e2e8f0'">
+        </div>
+        <p id="ganti-pw-error" style="color:#ef4444;font-size:13px;margin-bottom:12px;display:none;background:#fef2f2;padding:8px 12px;border-radius:8px;"></p>
+        <button id="btn-konfirm-ganti-pw" style="width:100%;padding:14px;background:linear-gradient(135deg,#4F46E5,#6366F1);color:white;border:none;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;font-family:'Poppins','Inter',sans-serif;box-shadow:0 4px 15px rgba(79,70,229,0.35);transition:0.2s;">
+            <i class="fa-solid fa-key"></i> Simpan Password Baru
+        </button>
+    </div>
+</div>
+
+<style>@keyframes popIn{from{transform:scale(0.8);opacity:0}to{transform:scale(1);opacity:1}}</style>
+
+<div id="modal-reset-password-user" class="modal">
+    <div class="modal-content" style="width: 380px;">
+        <h3>Reset Password User</h3>
+        <p style="font-size:13px; color:#64748b; margin-bottom:15px;">Reset password untuk user: <strong id="reset-user-name">-</strong></p>
+        <input type="hidden" id="reset-user-id">
+        <input type="password" id="reset-user-pw" placeholder="Password baru (min 6 karakter)" autocomplete="new-password" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-family:'Poppins'; margin-bottom:20px;">
+        <div class="modal-buttons">
+            <button id="btn-submit-reset-pw" class="btn-primary">Simpan Password Baru</button>
+            <button class="btn-danger btn-tutup-modal">Batal</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!-- Chart.js 4.4.7 — self-hosted -->
+<script src="/vendor/chartjs/chart.umd.min.js"></script>
+<script src="./js/theme.js"></script>
+<script src="./js/live-clock.js"></script>
+<script src="./js/animations.js"></script>
+<script src="./js/admin.js"></script>
+
+</body>
+</html>
+

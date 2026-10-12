@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Ketidakhadiran - Guru - AbsenSekolah</title>
+    <meta name="description" content="Form pencatatan ketidakhadiran siswa (Sakit, Izin, Alpa) khusus guru.">
+    <!-- Font Awesome 6.5.2 — self-hosted (berjalan offline) -->
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <!-- Inter font — self-hosted -->
+    <link rel="stylesheet" href="/vendor/inter/inter.css">
+    <style>
+        /* JANGAN set font-family di selector * — akan menimpa ::before Font Awesome */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 15px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 520px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Top Header */
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 16px 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 1px solid #e2e8f0;
+        }
+        .btn-back-dash {
+            background: #EEF2FF;
+            color: #4F46E5;
+            border: 1px solid #C7D2FE;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .btn-back-dash:hover {
+            background: #4F46E5;
+            color: white;
+        }
+
+        /* Form Card */
+        .card {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .header-icon {
+            width: 48px;
+            height: 48px;
+            background: #ECFDF5;
+            color: #10B981;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+        .header-text h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .header-text p {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        /* Input Form */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .form-group label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .input-wrapper {
+            position: relative;
+        }
+        .input-wrapper i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 16px;
+        }
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 14px 16px 14px 46px;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            font-size: 14px;
+            font-family: 'Poppins';
+            outline: none;
+            transition: all 0.2s;
+            background: #f8fafc;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: #10B981;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
+        }
+
+        /* Student Preview Card */
+        .student-preview {
+            display: none;
+            background: #F0FDF4;
+            border: 1.5px solid #A7F3D0;
+            border-radius: 14px;
+            padding: 12px 16px;
+            align-items: center;
+            gap: 12px;
+        }
+        .student-preview.show { display: flex; }
+        .student-preview i { font-size: 24px; color: #10B981; }
+        .student-preview-info h4 { font-size: 14px; font-weight: 700; color: #065F46; }
+        .student-preview-info p { font-size: 12px; color: #047857; }
+
+        /* Big Status Selection Buttons */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .btn-status {
+            padding: 14px 10px;
+            border: 2.5px solid #e2e8f0;
+            border-radius: 16px;
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-status i { font-size: 20px; }
+        .btn-status:hover { background: #f1f5f9; }
+
+        .btn-status.selected-sakit {
+            border-color: #F59E0B;
+            background: #FEF3C7;
+            color: #92400E;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+        }
+        .btn-status.selected-izin {
+            border-color: #3B82F6;
+            background: #EFF6FF;
+            color: #1E40AF;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+        .btn-status.selected-alpa {
+            border-color: #EF4444;
+            background: #FEF2F2;
+            color: #991B1B;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+
+        /* Submit Button */
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #10B981, #059669);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+            margin-top: 5px;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(16, 185, 129, 0.4);
+        }
+        .btn-submit:disabled {
+            background: #9CA3AF;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Toast Notif */
+        #toast-box {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #10B981;
+            color: white;
+            padding: 14px 24px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
+            white-space: nowrap;
+            opacity: 0;
+        }
+        #toast-box.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Top Navigation Header -->
+    <div class="top-header">
+        <a href="/guru-dashboard" class="btn-back-dash">
+            <i class="fa-solid fa-arrow-left"></i> Kembali ke Dashboard
+        </a>
+        <span style="font-size:12px; font-weight:700; color:#64748b;"><i class="fa-solid fa-user-check"></i> Mode Guru</span>
+    </div>
+
+    <!-- Main Input Form Card -->
+    <div class="card">
+        <div class="card-header">
+            <div class="header-icon"><i class="fa-solid fa-clipboard-user"></i></div>
+            <div class="header-text">
+                <h2>Input Ketidakhadiran Siswa</h2>
+                <p>Catat data Sakit, Izin, atau Alpa siswa tanpa perlu scan QR.</p>
+            </div>
+        </div>
+
+        <form id="formAbsenManual" onsubmit="event.preventDefault(); submitKetidakhadiran();">
+            
+            <!-- Cari Siswa -->
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label for="input-cari-siswa"><i class="fa-solid fa-magnifying-glass" style="color:#10B981;"></i> Cari Nama atau NIS Siswa *</label>
+                <div class="input-wrapper">
+                    <i class="fa-solid fa-search"></i>
+                    <input type="text" id="input-cari-siswa" list="list-siswa" placeholder="Ketik nama atau NIS..." autocomplete="off" required oninput="checkSelectedStudent()">
+                    <datalist id="list-siswa"></datalist>
+                </div>
+            </div>
+
+            <!-- Student Preview Box -->
+            <div id="student-preview" class="student-preview">
+                <i class="fa-solid fa-circle-user"></i>
+                <div class="student-preview-info">
+                    <h4 id="prev-nama">Nama Siswa</h4>
+                    <p id="prev-detail">NIS: - | Kelas: -</p>
+                </div>
+            </div>
+
+            <!-- Status Buttons -->
+            <div class="form-group" style="margin-top: 16px; margin-bottom: 16px;">
+                <label><i class="fa-solid fa-flag" style="color:#10B981;"></i> Status Ketidakhadiran *</label>
+                <div class="status-grid">
+                    <button type="button" class="btn-status selected-sakit" id="btn-sakit" onclick="selectStatus('Sakit')">
+                        <i class="fa-solid fa-notes-medical"></i> Sakit
+                    </button>
+                    <button type="button" class="btn-status" id="btn-izin" onclick="selectStatus('Izin')">
+                        <i class="fa-solid fa-envelope-open-text"></i> Izin
+                    </button>
+                    <button type="button" class="btn-status" id="btn-alpa" onclick="selectStatus('Alpa')">
+                        <i class="fa-solid fa-user-xmark"></i> Alpa
+                    </button>
+                </div>
+            </div>
+
+            <!-- Keterangan Tambahan -->
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="input-keterangan"><i class="fa-solid fa-comment-dots" style="color:#10B981;"></i> Keterangan / Alasan (Opsional)</label>
+                <div class="input-wrapper">
+                    <i class="fa-solid fa-pen" style="top: 24px;"></i>
+                    <textarea id="input-keterangan" rows="2" placeholder="Contoh: Demam, Surat dokter terlampir..."></textarea>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="btn-simpan" class="btn-submit">
+                <i class="fa-solid fa-paper-plane"></i> Simpan Ketidakhadiran
+            </button>
+
+        </form>
+    </div>
+
+</div>
+
+<!-- Toast Notif -->
+<div id="toast-box">
+    <i class="fa-solid fa-circle-check"></i> <span id="toast-msg">Absensi berhasil disimpan!</span>
+</div>
+
+<script>
+    let listSiswaData = [];
+    let selectedStatus = 'Sakit';
+
+    // Guard login
+    fetch('/api/auth/me', { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(d => { if (!d.loggedIn) window.location.href = '/login'; });
+
+    // Load active students list for autocomplete
+    async function loadSiswaList() {
+        try {
+            const res = await fetch('/api/absensi/siswa-list', { credentials: 'same-origin' });
+            if (res.ok) {
+                listSiswaData = await res.json();
+                const datalist = document.getElementById('list-siswa');
+                datalist.innerHTML = '';
+                listSiswaData.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = `${s.nama_lengkap} (${s.nis})`;
+                    opt.setAttribute('data-nis', s.nis);
+                    opt.setAttribute('data-nama', s.nama_lengkap);
+                    opt.setAttribute('data-kelas', s.kelas);
+                    datalist.appendChild(opt);
+                });
+            }
+        } catch (e) {
+            console.error('Gagal memuat list siswa:', e);
+        }
+    }
+
+    function selectStatus(status) {
+        selectedStatus = status;
+        const btnSakit = document.getElementById('btn-sakit');
+        const btnIzin = document.getElementById('btn-izin');
+        const btnAlpa = document.getElementById('btn-alpa');
+
+        btnSakit.className = 'btn-status';
+        btnIzin.className = 'btn-status';
+        btnAlpa.className = 'btn-status';
+
+        if (status === 'Sakit') btnSakit.className = 'btn-status selected-sakit';
+        if (status === 'Izin') btnIzin.className = 'btn-status selected-izin';
+        if (status === 'Alpa') btnAlpa.className = 'btn-status selected-alpa';
+    }
+
+    function checkSelectedStudent() {
+        const val = document.getElementById('input-cari-siswa').value.trim();
+        const found = listSiswaData.find(s => `${s.nama_lengkap} (${s.nis})` === val || s.nis === val || s.nama_lengkap.toLowerCase() === val.toLowerCase());
+
+        const previewEl = document.getElementById('student-preview');
+        if (found) {
+            document.getElementById('prev-nama').textContent = found.nama_lengkap;
+            document.getElementById('prev-detail').textContent = `NIS: ${found.nis} | Kelas: ${found.kelas}`;
+            previewEl.classList.add('show');
+        } else {
+            previewEl.classList.remove('show');
+        }
+    }
+
+    function extractNis(inputVal) {
+        const match = inputVal.match(/\(([^)]+)\)/);
+        if (match && match[1]) return match[1];
+        return inputVal.trim();
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast-box');
+        document.getElementById('toast-msg').textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    async function submitKetidakhadiran() {
+        const inputVal = document.getElementById('input-cari-siswa').value.trim();
+        const nis = extractNis(inputVal);
+        const keterangan = document.getElementById('input-keterangan').value.trim();
+
+        if (!nis) {
+            alert('Harap pilih atau masukkan NIS / Nama siswa!');
+            return;
+        }
+
+        const btnSimpan = document.getElementById('btn-simpan');
+        btnSimpan.disabled = true;
+        btnSimpan.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
+        try {
+            const res = await fetch('/api/absensi/manual-input', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    nis: nis,
+                    status: selectedStatus,
+                    keterangan: keterangan
+                })
+            });
+
+            const data = await res.json();
+            if (data.sukses) {
+                showToast(`Berhasil dicatat: ${data.nama || 'Siswa'} - ${selectedStatus}`);
+                // Reset Form untuk input siswa berikutnya
+                document.getElementById('input-cari-siswa').value = '';
+                document.getElementById('input-keterangan').value = '';
+                document.getElementById('student-preview').classList.remove('show');
+                document.getElementById('input-cari-siswa').focus();
+            } else {
+                alert(`Gagal: ${data.pesan || 'Terjadi kesalahan'}`);
+            }
+        } catch (e) {
+            alert('Tidak dapat terhubung ke server.');
+        } finally {
+            btnSimpan.disabled = false;
+            btnSimpan.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Simpan Ketidakhadiran';
+        }
+    }
+
+    loadSiswaList();
+</script>
+
+</body>
+</html>

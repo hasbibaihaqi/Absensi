@@ -1,0 +1,35 @@
+{
+    "name": "absensi-sekolah",
+    "version": "2.0.0",
+    "description": "Aplikasi Absensi Sekolah — Web Application (Express.js)",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node server.js",
+        "backup": "node scripts/backup.js"
+    },
+    "dependencies": {
+        "bcrypt": "^6.0.0",
+        "cookie-parser": "^1.4.7",
+        "cors": "^2.8.6",
+        "dotenv": "^16.4.7",
+        "express": "^4.21.2",
+        "express-rate-limit": "^7.5.0",
+        "helmet": "^8.3.0",
+        "jsonwebtoken": "^9.0.2",
+        "jszip": "^3.10.1",
+        "morgan": "^1.12.1",
+        "multer": "^2.4.0",
+        "node-cron": "^4.6.0",
+        "qrcode": "^1.5.4",
+        "sqlite3": "^5.1.7",
+        "xlsx": "^0.18.5"
+    },
+    "keywords": [
+        "absensi",
+        "sekolah",
+        "express",
+        "sqlite"
+    ],
+    "license": "ISC"
+}

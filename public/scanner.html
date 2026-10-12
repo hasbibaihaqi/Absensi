@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4F46E5">
+    <link rel="manifest" href="/manifest.json">
+    <!-- Font Awesome 6.5.2 — self-hosted (berjalan offline) -->
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <!-- Inter font — self-hosted -->
+    <link rel="stylesheet" href="/vendor/inter/inter.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: #0f172a; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+
+        #scanner-container { position: relative; width: 100vw; height: 100vh; background: #000; }
+        #reader { width: 100%; height: 100%; object-fit: cover; }
+        #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+
+        .scan-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .frame { width: 450px; height: 450px; border: 4px dashed rgba(255, 255, 255, 0.6); border-radius: 24px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); position: relative; }
+        .frame::after { content: "POSISI QR & WAJAH"; position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%); color: white; font-size: 14px; letter-spacing: 2px; opacity: 0.8; width: 100%; text-align: center; }
+
+        #flash-notif {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(255, 255, 255, 0.98); padding: 40px 60px; border-radius: 30px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4); opacity: 0; visibility: hidden; transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 100; min-width: 350px;
+        }
+        #flash-notif.show { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+        #flash-icon { font-size: 90px; margin-bottom: 15px; }
+        #flash-name { font-size: 36px; font-weight: 700; color: #0f172a; line-height: 1.1; margin-bottom: 5px; }
+        #flash-status { font-size: 20px; font-weight: 600; }
+
+        .btn-back { position: absolute; top: 30px; left: 30px; background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 12px 25px; border-radius: 12px; font-size: 16px; cursor: pointer; backdrop-filter: blur(10px); transition: 0.3s; z-index: 50; display: flex; align-items: center; gap: 10px; }
+        .btn-back:hover { background: rgba(255,255,255,0.3); transform: translateX(-5px); }
+
+        .btn-manual { position: absolute; bottom: 35px; left: 50%; transform: translateX(-50%); background: rgba(245, 158, 11, 0.9); color: white; border: none; padding: 14px 32px; border-radius: 50px; font-size: 15px; font-weight: 600; cursor: pointer; backdrop-filter: blur(10px); transition: 0.3s; z-index: 50; display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 25px rgba(245,158,11,0.4); border: 1px solid rgba(255,255,255,0.2); }
+        .btn-manual:hover { background: rgba(245, 158, 11, 1); transform: translateX(-50%) translateY(-3px); box-shadow: 0 12px 30px rgba(245,158,11,0.5); }
+        .btn-manual i { font-size: 18px; }
+
+        #modal-manual { display: none; position: fixed; z-index: 200; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); justify-content: center; align-items: center; }
+        #modal-manual.show { display: flex; }
+        .manual-box { background: white; border-radius: 24px; padding: 40px 45px; width: 420px; text-align: center; box-shadow: 0 25px 60px rgba(0,0,0,0.4); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .manual-box .manual-icon { font-size: 52px; color: #F59E0B; margin-bottom: 12px; }
+        .manual-box h2 { font-size: 22px; color: #0f172a; margin-bottom: 6px; }
+        .manual-box p { font-size: 13px; color: #64748b; margin-bottom: 24px; line-height: 1.6; }
+        .manual-input-wrap { position: relative; margin-bottom: 20px; }
+        .manual-input-wrap i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 18px; }
+        #input-nis-manual { width: 100%; padding: 16px 16px 16px 48px; font-size: 20px; font-family: 'Poppins'; font-weight: 600; letter-spacing: 2px; border: 2.5px solid #e2e8f0; border-radius: 14px; outline: none; text-align: center; background: #f8fafc; transition: 0.2s; color: #0f172a; }
+        #input-nis-manual:focus { border-color: #F59E0B; background: white; box-shadow: 0 0 0 4px rgba(245,158,11,0.15); }
+        .manual-btn-row { display: flex; gap: 12px; }
+        .btn-manual-submit { flex: 1; padding: 14px; background: linear-gradient(135deg, #F59E0B, #D97706); color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: 'Poppins'; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(245,158,11,0.3); }
+        .btn-manual-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(245,158,11,0.4); }
+        .btn-manual-cancel { padding: 14px 20px; background: #f1f5f9; color: #64748b; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: 'Poppins'; transition: 0.2s; }
+        .btn-manual-cancel:hover { background: #e2e8f0; }
+
+        .jenis-toggle { display: flex; gap: 10px; margin-bottom: 20px; }
+        .jenis-btn { flex: 1; padding: 12px 10px; border: 2.5px solid #e2e8f0; border-radius: 12px; background: #f8fafc; color: #94a3b8; font-family: 'Poppins'; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .jenis-btn:hover { border-color: #cbd5e1; color: #64748b; background: #f1f5f9; }
+        .jenis-btn.active-masuk { border-color: #10B981; background: #F0FDF4; color: #065F46; }
+        .jenis-btn.active-pulang { border-color: #F59E0B; background: #FFFBEB; color: #92400E; }
+
+        /* --- JAM LIVE OVERLAY SCANNER --- */
+        .scanner-live-clock {
+            position: absolute;
+            top: 25px;
+            right: 30px;
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 10px 20px;
+            color: white;
+            backdrop-filter: blur(12px);
+            z-index: 50;
+            text-align: right;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .scanner-clock-badge {
+            font-size: 11px;
+            font-weight: 600;
+            color: #818CF8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+        .scanner-live-clock .live-clock-time {
+            font-size: 22px;
+            font-weight: 700;
+            color: #F8FAFC;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 1px;
+            line-height: 1.1;
+        }
+        .scanner-live-clock .live-clock-date {
+            font-size: 11px;
+            color: #94A3B8;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div style="position: absolute; top: 25px; left: 30px; z-index: 50; display: flex; gap: 12px; align-items: center;">
+        <button id="btn-back-guru-dashboard" class="btn-back" style="display:none; position:static; background: rgba(79, 70, 229, 0.85); border-color: rgba(79, 70, 229, 0.5);" onclick="window.location.href='/guru-dashboard'">
+            <i class="fa-solid fa-arrow-left"></i> Kembali ke Dashboard
+        </button>
+        <button id="btn-nav-dashboard" class="btn-back" style="display:none; position:static;" onclick="window.location.href='/admin'">
+            <i class="fa-solid fa-house"></i> Dashboard Admin
+        </button>
+        <button class="btn-back" style="position:static; background: rgba(239, 68, 68, 0.85); border-color: rgba(239,68,68,0.5);" onclick="logoutUser()">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar (<span id="user-display-name">Guru</span>)
+        </button>
+    </div>
+
+    <div class="scanner-live-clock">
+        <div class="scanner-clock-badge"><i class="fa-solid fa-clock"></i> Waktu Server (WIB)</div>
+        <div class="live-clock-time" id="scanner-clock-time">00:00:00</div>
+        <div class="live-clock-date" id="scanner-clock-date">Memuat tanggal...</div>
+    </div>
+
+    <button class="btn-manual" id="btn-buka-manual">
+        <i class="fa-solid fa-keyboard"></i> Absen Manual (Lupa Kartu)
+    </button>
+
+    <div id="scanner-container">
+        <div id="reader"></div>
+        <div class="scan-overlay">
+            <div class="frame"></div>
+        </div>
+    </div>
+
+    <div id="flash-notif">
+        <i id="flash-icon" class="fa-solid fa-circle-check"></i>
+        <div id="flash-name">Memproses...</div>
+        <div id="flash-status">Mohon Tunggu</div>
+    </div>
+
+    <!-- Modal Absen Manual -->
+    <div id="modal-manual">
+        <div class="manual-box">
+            <div class="manual-icon"><i class="fa-solid fa-id-card"></i></div>
+            <h2>Absensi Manual</h2>
+            <p>Masukkan NIS siswa atau kode guru yang ingin dicatatkan absensinya.</p>
+            <div class="jenis-toggle">
+                <button class="jenis-btn active-masuk" id="btn-jenis-masuk"><i class="fa-solid fa-arrow-right-to-bracket"></i> Masuk</button>
+                <button class="jenis-btn" id="btn-jenis-pulang"><i class="fa-solid fa-arrow-right-from-bracket"></i> Pulang</button>
+            </div>
+            <div class="manual-input-wrap">
+                <i class="fa-solid fa-hashtag"></i>
+                <input type="text" id="input-nis-manual" placeholder="Ketik NIS / Kode..." autocomplete="off">
+            </div>
+            <div class="manual-btn-row">
+                <button class="btn-manual-cancel" id="btn-tutup-manual">Batal</button>
+                <button class="btn-manual-submit" id="btn-proses-manual"><i class="fa-solid fa-circle-check"></i> Catat Absen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- OVERLAY MULAI SCAN (Aktivasi Audio & Kamera) -->
+    <div id="overlay-mulai-scan" style="position: fixed; inset: 0; z-index: 500; background: rgba(15, 23, 42, 0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px;">
+        <div style="background: white; border-radius: 28px; padding: 40px 35px; max-width: 420px; width: 100%; box-shadow: 0 25px 60px rgba(0,0,0,0.5);">
+            <div style="width: 80px; height: 80px; border-radius: 50%; background: #EEF2FF; color: #4F46E5; display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 20px;">
+                <i class="fa-solid fa-camera"></i>
+            </div>
+            <h2 style="font-size: 22px; color: #0f172a; margin-bottom: 8px;">Mode Scanner Absensi</h2>
+            <p style="font-size: 14px; color: #64748b; line-height: 1.6; margin-bottom: 25px;">
+                Klik tombol di bawah ini untuk memulai kamera dan mengaktifkan suara notifikasi absensi secara otomatis.
+            </p>
+            <button id="btn-mulai-scan-utama" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #4F46E5, #6366F1); color: white; border: none; border-radius: 16px; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4); transition: 0.2s;">
+                <i class="fa-solid fa-play"></i> Mulai Scan &amp; Aktifkan Suara
+            </button>
+        </div>
+    </div>
+
+    <!-- Panel Mode Scan Live -->
+    <div id="scan-mode-panel" style="position: absolute; top: 30px; right: 30px; background: rgba(255,255,255,0.95); padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 50; display: flex; flex-direction: column; gap: 10px; width: 350px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.5);">
+        <h3 style="text-align: center; font-size: 15px; margin-bottom: 5px; color: #0f172a;"><i class="fa-solid fa-sliders" style="color: #4F46E5;"></i> Mode Scan Saat Ini:</h3>
+        <div class="jenis-toggle" style="margin-bottom: 5px;">
+            <button class="jenis-btn active-masuk" id="mode-scan-masuk"><i class="fa-solid fa-arrow-right-to-bracket"></i> Masuk</button>
+            <button class="jenis-btn" id="mode-scan-pulang"><i class="fa-solid fa-arrow-right-from-bracket"></i> Pulang</button>
+        </div>
+        <div id="panel-keterangan" style="display: none;">
+            <input type="text" id="input-keterangan-live" placeholder="Keterangan (Sakit/Izin) khusus pulang awal" style="width: 100%; padding: 12px 15px; border-radius: 12px; border: 2px solid #e2e8f0; outline: none; font-family: 'Poppins'; font-size: 13px; background: #f8fafc; transition: 0.2s;">
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <script>
+        // Cek login
+        fetch('/api/auth/me', { credentials: 'same-origin' })
+            .then(r => r.json())
+            .then(d => {
+                if (!d.loggedIn) {
+                    window.location.href = '/login';
+                } else {
+                    const nameEl = document.getElementById('user-display-name');
+                    if (nameEl) nameEl.textContent = d.nama_lengkap || d.username;
+                    if (d.role === 'admin') {
+                        const dashBtn = document.getElementById('btn-nav-dashboard');
+                        if (dashBtn) dashBtn.style.display = 'inline-flex';
+                    } else if (d.role === 'guru') {
+                        const guruDashBtn = document.getElementById('btn-back-guru-dashboard');
+                        if (guruDashBtn) guruDashBtn.style.display = 'inline-flex';
+                    }
+                }
+            });
+
+        async function logoutUser() {
+            await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+            window.location.href = '/login';
+        }
+
+        let isProcessing = false;
+        let html5QrCode = null;
+        let modeScanAktif = 'Masuk';
+        const scannedCooldownMap = new Map(); // Cooldown per kode (3 detik)
+
+        function startScanner() {
+            if (html5QrCode) return;
+            html5QrCode = new Html5Qrcode('reader');
+            const config = { fps: 15, qrbox: { width: 450, height: 450 } };
+
+            html5QrCode.start(
+                { facingMode: 'user' },
+                config,
+                async (decodedText) => {
+                    if (isProcessing) return;
+
+                    // Cooldown 3 detik untuk kode/QR yang sama agar tidak spam request
+                    const now = Date.now();
+                    const lastScanned = scannedCooldownMap.get(decodedText) || 0;
+                    if (now - lastScanned < 3000) {
+                        return; // Masih dalam masa cooldown 3 detik
+                    }
+                    scannedCooldownMap.set(decodedText, now);
+
+                    isProcessing = true;
+
+                    const ketInput = document.getElementById('input-keterangan-live');
+                    const ket = ketInput ? ketInput.value.trim() : '';
+
+                    try {
+                        const res = await fetch('/api/absensi/scan', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'same-origin',
+                            body: JSON.stringify({
+                                qrData: decodedText,
+                                isManual: false,
+                                jenisScan: modeScanAktif,
+                                keterangan: ket
+                            })
+                        });
+                        const result = await res.json();
+                        tampilkanHasil(result, res.status);
+                        if (ketInput) ketInput.value = '';
+                    } catch {
+                        tampilkanHasil({ status: 'error', pesan: 'Tidak dapat terhubung ke server.' }, 500);
+                    }
+                }
+            ).catch(err => console.error('Kamera Error:', err));
+        }
+
+        // Audio Effects & Suara (Web Audio API synthesizer + SpeechSynthesis + audio fallback)
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) audioCtx = new AudioContext();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function putarSuaraBerhasil(jenis) {
+            try {
+                // 1. Melodi beep ceria via Web Audio API
+                const ctx = getAudioContext();
+                if (ctx) {
+                    const now = ctx.currentTime;
+                    const osc1 = ctx.createOscillator();
+                    const osc2 = ctx.createOscillator();
+                    const gain = ctx.createGain();
+
+                    osc1.type = 'sine';
+                    osc2.type = 'sine';
+
+                    const f1 = jenis === 'Pulang' ? 587.33 : 880.00;
+                    const f2 = jenis === 'Pulang' ? 880.00 : 1174.66;
+
+                    osc1.frequency.setValueAtTime(f1, now);
+                    osc1.frequency.exponentialRampToValueAtTime(f2, now + 0.12);
+
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+
+                    osc1.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    osc1.start(now);
+                    osc1.stop(now + 0.35);
+                }
+
+                const audio = new Audio('/assets/sounds/beep.mp3');
+                audio.volume = 0.5;
+                audio.play().catch(() => {});
+            } catch (e) {
+                console.warn('Audio playback error:', e);
+            }
+
+            // 2. Text-to-Speech
+            if ('speechSynthesis' in window) {
+                try {
+                    window.speechSynthesis.cancel(); // batalkan antrean sebelumnya agar tidak menumpuk
+                    const text = jenis === 'Pulang' ? 'Absen pulang berhasil' : 'Absen masuk berhasil';
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'id-ID';
+                    utterance.rate = 1.05;
+                    utterance.pitch = 1.1;
+                    window.speechSynthesis.speak(utterance);
+                } catch (_) {}
+            }
+        }
+
+        function putarSuaraSudahAbsen() {
+            // Suara peringatan khas "Anda sudah absen"
+            try {
+                const ctx = getAudioContext();
+                if (ctx) {
+                    const now = ctx.currentTime;
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(330, now + 0.15);
+
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                }
+            } catch (_) {}
+
+            let spokeSpeech = false;
+            if ('speechSynthesis' in window) {
+                try {
+                    window.speechSynthesis.cancel(); // Hentikan antrean suara lama agar tidak tumpang tindih
+                    const utterance = new SpeechSynthesisUtterance('Anda sudah absen');
+                    utterance.lang = 'id-ID';
+                    utterance.rate = 1.0;
+                    utterance.pitch = 1.0;
+                    window.speechSynthesis.speak(utterance);
+                    spokeSpeech = true;
+                } catch (_) {}
+            }
+
+            // Fallback ke audio file di /sounds/sudah-absen.mp3 jika TTS tidak bersuara
+            if (!spokeSpeech) {
+                try {
+                    const audio = new Audio('/sounds/sudah-absen.mp3');
+                    audio.volume = 0.7;
+                    audio.play().catch(() => {});
+                } catch (_) {}
+            }
+        }
+
+        function putarSuaraGagal() {
+            try {
+                const ctx = getAudioContext();
+                if (ctx) {
+                    const now = ctx.currentTime;
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.linearRampToValueAtTime(150, now + 0.3);
+
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+            } catch (_) {}
+
+            if ('speechSynthesis' in window) {
+                try {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance('Absensi gagal');
+                    utterance.lang = 'id-ID';
+                    utterance.rate = 1.0;
+                    window.speechSynthesis.speak(utterance);
+                } catch (_) {}
+            }
+        }
+
+        // Aktifkan Audio Context pada interaksi pertama (kebijakan autoplay browser)
+        document.addEventListener('click', () => getAudioContext(), { once: true });
+        document.addEventListener('touchstart', () => getAudioContext(), { once: true });
+
+        // Tombol Mulai Scan Utama (Aktivasi Audio dan Kamera)
+        const btnMulaiScan = document.getElementById('btn-mulai-scan-utama');
+        const overlayMulaiScan = document.getElementById('overlay-mulai-scan');
+        if (btnMulaiScan && overlayMulaiScan) {
+            btnMulaiScan.addEventListener('click', () => {
+                getAudioContext();
+                // Test speech synthesis singkat agar izin audio browser langsung terbuka
+                if ('speechSynthesis' in window) {
+                    try { window.speechSynthesis.cancel(); } catch (_) {}
+                }
+                overlayMulaiScan.style.display = 'none';
+                startScanner();
+            });
+        }
+
+        function tampilkanHasil(res, statusCode) {
+            const notif  = document.getElementById('flash-notif');
+            const icon   = document.getElementById('flash-icon');
+            const name   = document.getElementById('flash-name');
+            const status = document.getElementById('flash-status');
+
+            if (res.status === 'sukses' || res.success === true) {
+                icon.className = 'fa-solid fa-circle-check';
+                icon.style.color = res.jenis === 'Pulang' ? '#F59E0B' : '#10B981';
+                name.innerText = res.nama || res.pesan?.split('\n')[1] || 'Berhasil';
+                status.innerText = `Absensi ${res.jenis} Berhasil`;
+                status.style.color = res.jenis === 'Pulang' ? '#F59E0B' : '#10B981';
+
+                // Bunyikan suara berhasil (beep ceria + ucapan)
+                putarSuaraBerhasil(res.jenis);
+            } else if (res.code === 'ALREADY_SCANNED' || statusCode === 409) {
+                // Notifikasi khusus: ALREADY_SCANNED (Kuning/Amber)
+                icon.className = 'fa-solid fa-triangle-exclamation';
+                icon.style.color = '#F59E0B';
+                const kelasInfo = res.kelas && res.kelas !== '-' ? ` (${res.kelas})` : '';
+                name.innerText = `${res.nama || 'Siswa'}${kelasInfo}`;
+                status.innerText = 'Anda sudah absen';
+                status.style.color = '#D97706';
+
+                // Bunyikan suara "Anda sudah absen"
+                putarSuaraSudahAbsen();
+            } else {
+                icon.className = 'fa-solid fa-circle-xmark';
+                icon.style.color = '#EF4444';
+                name.innerText = 'GAGAL!';
+                status.innerText = res.pesan || res.message || 'Gagal memproses absensi.';
+                status.style.color = '#EF4444';
+
+                // Bunyikan suara gagal
+                putarSuaraGagal();
+            }
+
+            notif.classList.add('show');
+            setTimeout(() => { notif.classList.remove('show'); isProcessing = false; }, 2500);
+        }
+
+        // Toggle mode scan
+        document.getElementById('mode-scan-masuk').addEventListener('click', () => {
+            modeScanAktif = 'Masuk';
+            document.getElementById('mode-scan-masuk').className = 'jenis-btn active-masuk';
+            document.getElementById('mode-scan-pulang').className = 'jenis-btn';
+            document.getElementById('panel-keterangan').style.display = 'none';
+        });
+        document.getElementById('mode-scan-pulang').addEventListener('click', () => {
+            modeScanAktif = 'Pulang';
+            document.getElementById('mode-scan-masuk').className = 'jenis-btn';
+            document.getElementById('mode-scan-pulang').className = 'jenis-btn active-pulang';
+            document.getElementById('panel-keterangan').style.display = 'block';
+        });
+
+        // Modal Manual
+        const modalManual = document.getElementById('modal-manual');
+        const inputNis    = document.getElementById('input-nis-manual');
+        let jenisManual   = 'Masuk';
+
+        document.getElementById('btn-jenis-masuk').addEventListener('click', () => {
+            jenisManual = 'Masuk';
+            document.getElementById('btn-jenis-masuk').className = 'jenis-btn active-masuk';
+            document.getElementById('btn-jenis-pulang').className = 'jenis-btn';
+            document.getElementById('btn-proses-manual').style.background = 'linear-gradient(135deg, #10B981, #059669)';
+        });
+        document.getElementById('btn-jenis-pulang').addEventListener('click', () => {
+            jenisManual = 'Pulang';
+            document.getElementById('btn-jenis-masuk').className = 'jenis-btn';
+            document.getElementById('btn-jenis-pulang').className = 'jenis-btn active-pulang';
+            document.getElementById('btn-proses-manual').style.background = 'linear-gradient(135deg, #F59E0B, #D97706)';
+        });
+
+        document.getElementById('btn-buka-manual').addEventListener('click', () => {
+            jenisManual = 'Masuk';
+            document.getElementById('btn-jenis-masuk').className = 'jenis-btn active-masuk';
+            document.getElementById('btn-jenis-pulang').className = 'jenis-btn';
+            document.getElementById('btn-proses-manual').style.background = 'linear-gradient(135deg, #10B981, #059669)';
+            modalManual.classList.add('show');
+            setTimeout(() => inputNis.focus(), 100);
+        });
+
+        document.getElementById('btn-tutup-manual').addEventListener('click', () => {
+            modalManual.classList.remove('show');
+            inputNis.value = '';
+        });
+        modalManual.addEventListener('click', (e) => {
+            if (e.target === modalManual) { modalManual.classList.remove('show'); inputNis.value = ''; }
+        });
+        inputNis.addEventListener('keydown', (e) => { if (e.key === 'Enter') prosesManual(); });
+        document.getElementById('btn-proses-manual').addEventListener('click', prosesManual);
+
+        async function prosesManual() {
+            const nis = inputNis.value.trim();
+            if (!nis) {
+                inputNis.style.borderColor = '#EF4444';
+                inputNis.focus();
+                setTimeout(() => inputNis.style.borderColor = '', 1500);
+                return;
+            }
+            if (isProcessing) return;
+            isProcessing = true;
+            modalManual.classList.remove('show');
+            inputNis.value = '';
+
+            try {
+                const res = await fetch('/api/absensi/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ qrData: nis, image: null, isManual: true, jenisManual })
+                });
+                const result = await res.json();
+                tampilkanHasil(result, res.status);
+            } catch {
+                tampilkanHasil({ status: 'error', pesan: 'Tidak dapat terhubung ke server.' }, 500);
+            }
+        }
+
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(reg => console.log('[PWA] Service Worker aktif:', reg.scope))
+                    .catch(err => console.log('[PWA] SW register error:', err));
+            });
+        }
+    </script>
+    <script src="./js/live-clock.js"></script>
+</body>
+</html>

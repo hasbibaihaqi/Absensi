@@ -1,0 +1,574 @@
+/**
+ * shared.css — Desain Sistem Terpadu Aplikasi Absensi Sekolah
+ * FASE 2: Konsistensi Desain, Aksesibilitas WCAG AA, dan Dark Mode Support
+ */
+
+/* Font Inter di-self-host agar bisa jalan offline/jaringan lokal */
+@import url('/vendor/inter/inter.css');
+
+/* ======================================================== */
+/* 1. DESIGN TOKENS (LIGHT THEME DEFAULT)                   */
+/* ======================================================== */
+:root {
+    /* Color Palette */
+    --primary: #4F46E5;
+    --primary-hover: #4338CA;
+    --primary-light: #EEF2FF;
+    --primary-dark: #3730A3;
+
+    --success: #10B981;
+    --success-hover: #059669;
+    --success-light: #D1FAE5;
+    --success-text: #065F46;
+
+    --warning: #F59E0B;
+    --warning-hover: #D97706;
+    --warning-light: #FEF3C7;
+    --warning-text: #92400E;
+
+    --danger: #EF4444;
+    --danger-hover: #DC2626;
+    --danger-light: #FEE2E2;
+    --danger-text: #991B1B;
+
+    --info: #0284C7;
+    --info-hover: #0369A1;
+    --info-light: #E0F2FE;
+    --info-text: #075985;
+
+    --purple: #8B5CF6;
+    --purple-light: #EDE9FE;
+    --purple-text: #5B21B6;
+
+    /* Neutrals */
+    --bg-page: radial-gradient(circle at 10% 15%, #EBE7FE 0%, #F4EEFD 35%, #FDECF5 65%, #E3E9FE 100%);
+    --bg-surface: #FFFFFF;
+    --bg-surface-elevated: #FFFFFF;
+    --bg-subtle: #F1F5F9;
+
+    --text-main: #0F172A;
+    --text-muted: #64748B;
+    --text-inverted: #FFFFFF;
+
+    --border-color: #E2E8F0;
+    --border-subtle: #F1F5F9;
+    --border-focus: #4F46E5;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+
+    /* Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 20px;
+    --radius-pill: 9999px;
+
+    /* Typography */
+    --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    /* Spacing */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+}
+
+/* ======================================================== */
+/* 2. DARK THEME TOKENS                                     */
+/* ======================================================== */
+[data-theme="dark"] {
+    --primary: #6366F1;
+    --primary-hover: #4F46E5;
+    --primary-light: rgba(99, 102, 241, 0.18);
+    --primary-dark: #818CF8;
+
+    --success: #10B981;
+    --success-light: rgba(16, 185, 129, 0.18);
+    --success-text: #6EE7B7;
+
+    --warning: #F59E0B;
+    --warning-light: rgba(245, 158, 11, 0.18);
+    --warning-text: #FCD34D;
+
+    --danger: #F87171;
+    --danger-light: rgba(239, 68, 68, 0.18);
+    --danger-text: #FCA5A5;
+
+    --info: #38BDF8;
+    --info-light: rgba(56, 189, 248, 0.18);
+    --info-text: #7DD3FC;
+
+    --purple: #A78BFA;
+    --purple-light: rgba(167, 139, 250, 0.18);
+    --purple-text: #C4B5FD;
+
+    --bg-page: radial-gradient(circle at 15% 15%, #181538 0%, #0c1020 50%, #150f24 100%);
+    --bg-surface: #111827;
+    --bg-surface-elevated: #1F2937;
+    --bg-subtle: #1F2937;
+
+    --text-main: #F3F4F6;
+    --text-muted: #9CA3AF;
+    --text-inverted: #0F172A;
+
+    --border-color: #374151;
+    --border-subtle: #1F2937;
+    --border-focus: #818CF8;
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+}
+
+/* ======================================================== */
+/* 3. RESET & BASE ACCESSIBILITY                            */
+/* ======================================================== */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    /* JANGAN set font-family di sini — akan menimpa font Font Awesome di ::before */
+}
+
+/* Terapkan font hanya ke elemen semantik, BUKAN pseudo-element */
+body, input, button, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span, label, td, th, li {
+    font-family: var(--font-sans);
+}
+
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: var(--bg-page);
+    color: var(--text-main);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Visible focus outline for accessibility (WCAG AA) */
+:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+}
+
+/* ======================================================== */
+/* 4. BUTTONS COMPONENT                                     */
+/* ======================================================== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    padding: 10px 18px;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 44px; /* Target sentuh mobile WCAG */
+    user-select: none;
+    white-space: nowrap;
+}
+
+.btn:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+/* Variants */
+.btn-primary {
+    background-color: var(--primary);
+    color: var(--text-inverted);
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+}
+.btn-primary:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+}
+
+.btn-secondary {
+    background-color: var(--bg-subtle);
+    color: var(--text-main);
+    border-color: var(--border-color);
+}
+.btn-secondary:hover:not(:disabled) {
+    background-color: var(--border-color);
+}
+
+.btn-success {
+    background-color: var(--success);
+    color: var(--text-inverted);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+}
+.btn-success:hover:not(:disabled) {
+    background-color: var(--success-hover);
+}
+
+.btn-danger {
+    background-color: var(--danger);
+    color: var(--text-inverted);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+}
+.btn-danger:hover:not(:disabled) {
+    background-color: var(--danger-hover);
+}
+
+.btn-outline {
+    background-color: transparent;
+    border-color: var(--border-color);
+    color: var(--text-main);
+}
+.btn-outline:hover:not(:disabled) {
+    background-color: var(--bg-subtle);
+    border-color: var(--text-muted);
+}
+
+/* Sizes */
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    min-height: 36px;
+    border-radius: var(--radius-sm);
+}
+
+.btn-lg {
+    padding: 14px 24px;
+    font-size: 1rem;
+    min-height: 48px;
+    border-radius: var(--radius-lg);
+}
+
+/* Disabled & Loading */
+.btn:disabled, .btn[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none !important;
+}
+
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+}
+
+/* ======================================================== */
+/* 5. BADGES COMPONENT (STATUS KONSISTEN)                    */
+/* ======================================================== */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.badge-hadir {
+    background-color: var(--success-light);
+    color: var(--success-text);
+}
+
+.badge-terlambat {
+    background-color: var(--warning-light);
+    color: var(--warning-text);
+}
+
+.badge-izin {
+    background-color: var(--info-light);
+    color: var(--info-text);
+}
+
+.badge-sakit {
+    background-color: var(--purple-light);
+    color: var(--purple-text);
+}
+
+.badge-alpa {
+    background-color: var(--danger-light);
+    color: var(--danger-text);
+}
+
+.badge-pulang {
+    background-color: #DBEAFE;
+    color: #1D4ED8;
+}
+[data-theme="dark"] .badge-pulang {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #93C5FD;
+}
+
+.badge-neutral {
+    background-color: var(--bg-subtle);
+    color: var(--text-muted);
+}
+
+/* ======================================================== */
+/* 6. FORMS & INPUTS COMPONENT                              */
+/* ======================================================== */
+.form-group {
+    margin-bottom: var(--space-4);
+    text-align: left;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: var(--space-2);
+}
+
+.form-label .required {
+    color: var(--danger);
+    margin-left: 2px;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon-left {
+    position: absolute;
+    left: 14px;
+    color: var(--text-muted);
+    font-size: 1rem;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.input-btn-right {
+    position: absolute;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    min-width: 36px;
+    transition: color 0.15s;
+    z-index: 2;
+}
+.input-btn-right:hover {
+    color: var(--text-main);
+}
+
+.form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-surface);
+    color: var(--text-main);
+    font-size: 0.875rem;
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+    min-height: 44px;
+}
+
+.has-icon-left .form-input, .has-icon-left .form-select {
+    padding-left: 42px;
+}
+
+.has-btn-right .form-input {
+    padding-right: 44px;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.form-input::placeholder, .form-textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+.form-input.is-invalid, .form-select.is-invalid {
+    border-color: var(--danger);
+}
+.form-input.is-invalid:focus {
+    box-shadow: 0 0 0 3px var(--danger-light);
+}
+
+.form-error {
+    font-size: 0.75rem;
+    color: var(--danger);
+    margin-top: var(--space-1);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.form-helper {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: var(--space-1);
+}
+
+/* ======================================================== */
+/* 7. CARDS & SURFACES                                      */
+/* ======================================================== */
+.card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-5);
+    transition: background-color 0.25s, border-color 0.25s, box-shadow 0.2s;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* ======================================================== */
+/* 8. PROGRESS BAR                                          */
+/* ======================================================== */
+.progress-bar-bg {
+    height: 10px;
+    background-color: var(--bg-subtle);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border-color);
+}
+
+.progress-bar-fill {
+    height: 100%;
+    border-radius: var(--radius-pill);
+    transition: width 0.4s ease-out;
+}
+
+.progress-green { background-color: var(--success); }
+.progress-yellow { background-color: var(--warning); }
+.progress-red { background-color: var(--danger); }
+
+/* ======================================================== */
+/* 9. TABLES COMPONENT                                      */
+/* ======================================================== */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-app {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.table-app thead th {
+    padding: 12px 16px;
+    background-color: var(--bg-subtle);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table-app tbody td {
+    padding: 14px 16px;
+    font-size: 0.875rem;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-main);
+}
+
+.table-app tbody tr:hover {
+    background-color: var(--bg-subtle);
+}
+
+/* ======================================================== */
+/* 10. THEME TOGGLE BUTTON                                  */
+/* ======================================================== */
+.theme-toggle-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
+    min-height: 40px;
+    backdrop-filter: blur(8px);
+}
+.theme-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: rotate(15deg);
+}
+
+[data-theme="dark"] .theme-toggle-btn {
+    background: #1F2937;
+    border-color: #374151;
+    color: #FCD34D;
+}
+[data-theme="dark"] .theme-toggle-btn:hover {
+    background: #374151;
+}
+
+/* Invertable theme toggle in light backgrounds (e.g. login/settings) */
+.theme-toggle-light {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+}
+.theme-toggle-light:hover {
+    background: var(--bg-subtle);
+    color: var(--primary);
+}
+
+/* ======================================================== */
+/* 11. PRINT RESET (@media print)                           */
+/* ======================================================== */
+@media print {
+    :root, [data-theme="dark"] {
+        --bg-page: #FFFFFF !important;
+        --bg-surface: #FFFFFF !important;
+        --text-main: #000000 !important;
+        --text-muted: #444444 !important;
+        --border-color: #CCCCCC !important;
+    }
+    body {
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+    }
+    .theme-toggle-btn, .theme-toggle-light, .btn, .no-print {
+        display: none !important;
+    }
+}

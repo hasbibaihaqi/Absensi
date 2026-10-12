@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Guru - AbsenSekolah</title>
+    <meta name="description" content="Dashboard utama guru untuk mengakses scanner absensi dan input ketidakhadiran siswa.">
+    <!-- Font Awesome 6.5.2 — self-hosted (berjalan offline) -->
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <!-- Inter font — self-hosted -->
+    <link rel="stylesheet" href="/vendor/inter/inter.css">
+    <style>
+        /* JANGAN set font-family di selector * — akan menimpa ::before Font Awesome */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 15px;
+        }
+
+        .dashboard-wrapper {
+            width: 100%;
+            max-width: 540px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Top Header Navbar */
+        .top-nav {
+            background: white;
+            border-radius: 20px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .user-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #6366F1;
+        }
+        .user-details h3 {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1e293b;
+            line-height: 1.2;
+        }
+        .user-details span.role-tag {
+            font-size: 11px;
+            background: #EEF2FF;
+            color: #4F46E5;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-top: 2px;
+        }
+        .btn-logout {
+            background: #FEF2F2;
+            color: #EF4444;
+            border: 1px solid #FEE2E2;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-logout:hover {
+            background: #EF4444;
+            color: white;
+        }
+
+        /* Banner Welcome */
+        .welcome-card {
+            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 50%, #8B5CF6 100%);
+            border-radius: 24px;
+            padding: 24px 26px;
+            color: white;
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.25);
+            position: relative;
+            overflow: hidden;
+        }
+        .welcome-card::after {
+            content: "\f554";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            right: -10px;
+            bottom: -15px;
+            font-size: 120px;
+            opacity: 0.12;
+            color: white;
+        }
+        .welcome-card h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .welcome-card p {
+            font-size: 13px;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        /* Live Clock Card */
+        .clock-card {
+            background: white;
+            border-radius: 20px;
+            padding: 16px 20px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e2e8f0;
+        }
+        .clock-badge {
+            font-size: 11px;
+            font-weight: 700;
+            color: #4F46E5;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .live-clock-time {
+            font-size: 28px;
+            font-weight: 800;
+            color: #1e293b;
+            letter-spacing: 1px;
+            font-variant-numeric: tabular-nums;
+        }
+        .live-clock-date {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
+            margin-top: 2px;
+        }
+
+        /* Menu Grid (Kartu Utama) */
+        .menu-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #334155;
+            margin-left: 4px;
+        }
+        .menu-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .menu-card {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            text-decoration: none;
+            color: inherit;
+        }
+        .menu-card:hover, .menu-card:active {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-card.scanner-card:hover { border-color: #6366F1; }
+        .menu-card.manual-card:hover { border-color: #10B981; }
+
+        .card-header-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .card-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        .scanner-card .card-icon {
+            background: #EEF2FF;
+            color: #4F46E5;
+        }
+        .manual-card .card-icon {
+            background: #ECFDF5;
+            color: #10B981;
+        }
+
+        .card-text-body h4 {
+            font-size: 17px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+        .card-text-body p {
+            font-size: 13px;
+            color: #64748b;
+            line-height: 1.4;
+        }
+
+        .card-btn-action {
+            width: 100%;
+            padding: 14px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 700;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: 0.2s;
+        }
+        .scanner-card .card-btn-action {
+            background: #4F46E5;
+            color: white;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+        }
+        .manual-card .card-btn-action {
+            background: #10B981;
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+        .menu-card:hover .card-btn-action {
+            filter: brightness(1.1);
+        }
+
+        .footer-note {
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-wrapper">
+
+    <!-- Top Navbar -->
+    <div class="top-nav">
+        <div class="user-info">
+            <img id="guru-avatar" class="user-avatar" src="https://ui-avatars.com/api/?name=Guru&background=4F46E5&color=fff">
+            <div class="user-details">
+                <h3 id="guru-nama">Guru</h3>
+                <span class="role-tag"><i class="fa-solid fa-chalkboard-user"></i> Guru</span>
+            </div>
+        </div>
+        <button class="btn-logout" id="btn-logout-guru" onclick="logoutGuru()">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar
+        </button>
+    </div>
+
+    <!-- Welcome Card -->
+    <div class="welcome-card">
+        <h2 id="welcome-title">Selamat Datang, Guru!</h2>
+        <p>Pilih menu utama di bawah ini untuk memulai pencatatan absensi siswa.</p>
+    </div>
+
+    <!-- Live Server Clock -->
+    <div class="clock-card">
+        <div class="clock-badge"><i class="fa-solid fa-clock"></i> Waktu Server (WIB)</div>
+        <div class="live-clock-time" id="clock-time">00:00:00</div>
+        <div class="live-clock-date" id="clock-date">Memuat tanggal...</div>
+    </div>
+
+    <!-- Menu Utama -->
+    <h3 class="menu-title">Menu Utama</h3>
+    <div class="menu-grid">
+
+        <!-- KARTU 1: MODE SCANNER -->
+        <a href="/scanner" class="menu-card scanner-card">
+            <div class="card-header-row">
+                <div class="card-icon">
+                    <i class="fa-solid fa-camera"></i>
+                </div>
+                <div class="card-text-body">
+                    <h4>Mode Scanner Absensi</h4>
+                    <p>Scan QR Code siswa dengan kamera HP untuk mencatat absensi Masuk & Pulang.</p>
+                </div>
+            </div>
+            <div class="card-btn-action">
+                <i class="fa-solid fa-qrcode"></i> Buka Mode Scanner <i class="fa-solid fa-arrow-right"></i>
+            </div>
+        </a>
+
+        <!-- KARTU 2: INPUT KETIDAKHADIRAN MANUAL -->
+        <a href="/guru-input-manual" class="menu-card manual-card">
+            <div class="card-header-row">
+                <div class="card-icon">
+                    <i class="fa-solid fa-clipboard-user"></i>
+                </div>
+                <div class="card-text-body">
+                    <h4>Input Ketidakhadiran</h4>
+                    <p>Pilih siswa dan catat status keteringatan (Sakit, Izin, atau Alpa) secara cepat.</p>
+                </div>
+            </div>
+            <div class="card-btn-action">
+                <i class="fa-solid fa-pen-to-square"></i> Input Ketidakhadiran <i class="fa-solid fa-arrow-right"></i>
+            </div>
+        </a>
+
+    </div>
+
+    <div class="footer-note">
+        AbsenSekolah Digital System &copy; 2026
+    </div>
+
+</div>
+
+<!-- MODAL WAJIB GANTI PASSWORD -->
+<div id="modal-ganti-password-wajib" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,0.85); backdrop-filter:blur(8px); justify-content:center; align-items:center;">
+    <div style="background:white; border-radius:24px; padding:35px 35px; width:90%; max-width:400px; box-shadow:0 25px 60px rgba(0,0,0,0.4);">
+        <div style="text-align:center; margin-bottom:20px;">
+            <div style="width:60px;height:60px;background:#FEF3C7;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:26px;">⚠️</div>
+            <h2 style="margin:0;font-size:18px;color:#1e293b;font-weight:800;">Ganti Password Sekarang</h2>
+            <p style="color:#64748b;font-size:13px;margin-top:6px;line-height:1.5;">Password akun Anda masih default. Wajib mengganti password sebelum melanjutkan.</p>
+        </div>
+        <div style="margin-bottom:14px;">
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Password Baru *</label>
+            <input type="password" id="ganti-pw-baru" placeholder="Minimal 8 karakter" style="width:100%;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;outline:none;font-size:14px;">
+        </div>
+        <div style="margin-bottom:18px;">
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Konfirmasi Password *</label>
+            <input type="password" id="ganti-pw-konfirm" placeholder="Ketik ulang password baru" style="width:100%;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;outline:none;font-size:14px;">
+        </div>
+        <p id="ganti-pw-error" style="color:#ef4444;font-size:13px;margin-bottom:12px;display:none;background:#fef2f2;padding:8px 12px;border-radius:8px;"></p>
+        <button id="btn-konfirm-ganti-pw" style="width:100%;padding:14px;background:#4F46E5;color:white;border:none;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;">
+            <i class="fa-solid fa-key"></i> Simpan Password Baru
+        </button>
+    </div>
+</div>
+
+<script src="./js/live-clock.js"></script>
+<script>
+    // Guard Sesi & Load Profile Guru
+    fetch('/api/auth/me', { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.loggedIn) {
+                window.location.href = '/login';
+                return;
+            }
+            const nama = data.nama_lengkap || data.username || 'Guru';
+            document.getElementById('guru-nama').textContent = nama;
+            document.getElementById('welcome-title').textContent = `Selamat Datang, ${nama}!`;
+            document.getElementById('guru-avatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(nama)}&background=4F46E5&color=fff`;
+
+            // Cek jika wajib ganti password
+            const urlParams = new URLSearchParams(window.location.search);
+            if (data.mustChangePassword || urlParams.get('changePassword') === 'required') {
+                document.getElementById('modal-ganti-password-wajib').style.display = 'flex';
+            }
+        })
+        .catch(() => {
+            window.location.href = '/login';
+        });
+
+    async function logoutGuru() {
+        await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+        window.location.href = '/login';
+    }
+
+    // Modal Password Handler
+    document.getElementById('btn-konfirm-ganti-pw')?.addEventListener('click', async () => {
+        const pw = document.getElementById('ganti-pw-baru').value;
+        const konfirm = document.getElementById('ganti-pw-konfirm').value;
+        const errEl = document.getElementById('ganti-pw-error');
+        errEl.style.display = 'none';
+
+        if (!pw || !konfirm) {
+            errEl.textContent = 'Semua kolom wajib diisi.';
+            errEl.style.display = 'block';
+            return;
+        }
+        if (pw.length < 8) {
+            errEl.textContent = 'Password minimal 8 karakter.';
+            errEl.style.display = 'block';
+            return;
+        }
+        if (pw !== konfirm) {
+            errEl.textContent = 'Password dan konfirmasi tidak cocok.';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        const res = await fetch('/api/auth/change-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ password: pw, konfirmasi: konfirm })
+        });
+        const body = await res.json();
+        if (body.sukses) {
+            document.getElementById('modal-ganti-password-wajib').style.display = 'none';
+            window.history.replaceState({}, '', '/guru-dashboard');
+            alert('Password berhasil diubah!');
+        } else {
+            errEl.textContent = body.pesan || 'Gagal mengubah password.';
+            errEl.style.display = 'block';
+        }
+    });
+</script>
+
+</body>
+</html>
