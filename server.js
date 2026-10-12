@@ -86,21 +86,27 @@ app.use(helmet({
 }));
 
 // ==========================================
-// CORS — Hanya izinkan origin yang sama
+// CORS — Izinkan origin yang dikonfigurasi dan domain host
 // ==========================================
-const allowedOrigins = process.env.ALLOWED_ORIGINS
+const configuredOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-    : ['http://localhost:3000'];
+    : [];
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Izinkan request tanpa origin (misal: curl, Postman saat development)
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            console.warn(`[CORS] Blokir request dari origin: ${origin}`);
-            callback(new Error('Akses tidak diizinkan oleh kebijakan CORS.'));
+        // Izinkan request tanpa header origin (same-origin, curl, mobile browser internal)
+        if (!origin) return callback(null, true);
+
+        // Jika terdaftar di ALLOWED_ORIGINS
+        if (configuredOrigins.includes(origin)) return callback(null, true);
+
+        // Jika running di localhost atau domain onrender.com
+        if (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1') || origin.endsWith('.onrender.com')) {
+            return callback(null, true);
         }
+
+        console.warn(`[CORS] Blokir request dari origin: ${origin}`);
+        callback(new Error('Akses tidak diizinkan oleh kebijakan CORS.'));
     },
     credentials: true,          // Diperlukan agar cookie terkirim
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
